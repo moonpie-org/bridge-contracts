@@ -1,0 +1,14 @@
+{
+    "name": "Base Deployment Config",
+    "treasuryAddress": "",
+    "relayerAddress": "",
+    "usdc": {
+      "bridgeAddress": "0x5E007f834b6Ee2fcdA41631AD444b4dAAEc372b0",
+      "tokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    },
+    "weth": {
+      "bridgeAddress": "0xEd87e9170152A12a4D3904F5cdE323b35d880858",
+      "tokenAddress": "0x4200000000000000000000000000000000000006"
+    }
+  }
+  

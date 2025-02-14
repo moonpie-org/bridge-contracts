@@ -1,6 +1,22 @@
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 [profile.default]
 src = "src"
 out = "out"
 libs = ["lib"]
+remappings = ['@openzeppelin=lib/openzeppelin-contracts']
+fs_permissions = [
+    { access = "read", path = "./deploy-configs/local.json" },
+    { access = "read", path = "./deploy-configs/base.json" },
+    { access = "read", path = "./deploy-configs/arbitrum.json" },
+    { access = "read", path = "./out" }
+]
+rpc_url = "http://127.0.0.1:8545" # Anvil's default RPC URL
+solc_version = "0.8.22"
+forge-std = "latest"
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+# OZ upgrades
+ffi = true
+ast = true
+build_info = true
+extra_output = ["storageLayout"]
