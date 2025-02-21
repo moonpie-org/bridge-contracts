@@ -7,8 +7,12 @@ import {MoonPie} from "src/MoonPie.sol";
 contract MoonPieScript is Script {
     uint256 ownerPrivateKey = vm.envUint("OWNER_PRV_KEY");
 
-    string RELAYER_ADDRESS = vm.envString("RELAYER_ADDRESS");
+    address RELAYER_ADDRESS = vm.envAddress("RELAYER_ADDRESS");
     address TREASURY_ADDRESS = vm.envAddress("TREASURY_ADDRESS");
+    address WRWA_ADDRESS = vm.envAddress("WRWA_ADDRESS");
+    address SWAP_ROUTER_ADDRESS = vm.envAddress("SWAP_ROUTER_ADDRESS");
+    address NATIVE_RWA_TOKEN_ADDRESS =
+        vm.envAddress("NATIVE_RWA_TOKEN_ADDRESS");
 
     // set up initial conditions or requirements
     function setUp() public {}
@@ -17,7 +21,14 @@ contract MoonPieScript is Script {
     function run() public {
         vm.startBroadcast(ownerPrivateKey);
 
-        new MoonPie(RELAYER_ADDRESS, TREASURY_ADDRESS);
+        new MoonPie(
+            RELAYER_ADDRESS,
+            TREASURY_ADDRESS,
+            WRWA_ADDRESS,
+            SWAP_ROUTER_ADDRESS,
+            NATIVE_RWA_TOKEN_ADDRESS,
+            MoonPie.NETWORKS.BASE
+        );
 
         vm.stopBroadcast();
     }

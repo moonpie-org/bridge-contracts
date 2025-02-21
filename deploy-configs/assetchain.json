@@ -1,0 +1,17 @@
+{
+    "name": "Asset Chain Mainnet Deployment Config",
+    "treasuryAddress": "",
+    "relayerAddress": "",
+    "wrwaAddress": "0x2584D40B5553E81Bb9deC0b6CD1a2E504AAB1709",
+    "swapRouterAddress": "0xEC2B2209D710D4283b5d1e29441Df0Dbb9ceE5c3",
+    "nativeRwaTokenAddress": "0x0000000000000000000000000000000000000001",
+    "usdc": {
+      "bridgeAddress": "",
+      "tokenAddress": ""
+    },
+    "weth": {
+      "bridgeAddress": "",
+      "tokenAddress": ""
+    }
+  }
+  

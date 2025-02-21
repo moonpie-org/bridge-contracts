@@ -2,6 +2,9 @@
     "name": "Base Deployment Config",
     "treasuryAddress": "",
     "relayerAddress": "",
+    "wrwaAddress": "",
+    "swapRouterAddress": "",
+    "nativeRwaTokenAddress": "",
     "usdc": {
       "bridgeAddress": "0x5E007f834b6Ee2fcdA41631AD444b4dAAEc372b0",
       "tokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"

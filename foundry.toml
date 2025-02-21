@@ -4,16 +4,17 @@
 src = "src"
 out = "out"
 libs = ["lib"]
-remappings = ['@openzeppelin=lib/openzeppelin-contracts']
 fs_permissions = [
-    { access = "read", path = "./deploy-configs/local.json" },
+    { access = "read", path = "./deploy-configs/*" },
     { access = "read", path = "./deploy-configs/base.json" },
     { access = "read", path = "./deploy-configs/arbitrum.json" },
+    { access = "read", path = "./deploy-configs/assetchain.json" },
     { access = "read", path = "./out" }
 ]
 rpc_url = "http://127.0.0.1:8545" # Anvil's default RPC URL
 solc_version = "0.8.22"
 forge-std = "latest"
+via_ir = true
 
 # OZ upgrades
 ffi = true

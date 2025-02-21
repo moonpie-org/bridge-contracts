@@ -12,7 +12,9 @@ abstract contract BaseScript is Script {
             currentChain = Chains.Base;
         } else if (block.chainid == 84532) {
             currentChain = Chains.Arbitrum;
-        } else {
+        } else if (block.chainid == 42420) {
+            currentChain = Chains.AssetChain;
+        }  else {
             revert("Unsupported chain for deployment");
         }
     }
@@ -22,7 +24,8 @@ abstract contract BaseScript is Script {
     enum Chains {
         Localnet,
         Base,
-        Arbitrum
+        Arbitrum,
+        AssetChain
     }
 
     function getDeployConfigJson() internal view returns (string memory json) {
@@ -30,6 +33,8 @@ abstract contract BaseScript is Script {
             json = vm.readFile(string.concat(vm.projectRoot(), "/deploy-configs/base.json"));
         } else if (currentChain == Chains.Arbitrum) {
             json = vm.readFile(string.concat(vm.projectRoot(), "/deploy-configs/arbitrum.json"));
+        } else if (currentChain == Chains.AssetChain) {
+            json = vm.readFile(string.concat(vm.projectRoot(), "/deploy-configs/assetchain.json"));
         } else {
             json = vm.readFile(string.concat(vm.projectRoot(), "/deploy-configs/local.json"));
         }
