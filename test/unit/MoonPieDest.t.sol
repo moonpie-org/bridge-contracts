@@ -22,7 +22,7 @@ contract MoonPieDest is MoonPieDestBase {
             TREASURY_ADDRESS,
             WRWA_ADDRESS,
             SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA_TOKEN_ADDRESS,
+            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         assertEq(moonPie.RELAYER_ADDRESS(), RELAYER_ADDRESS);
@@ -34,7 +34,7 @@ contract MoonPieDest is MoonPieDestBase {
             TREASURY_ADDRESS,
             WRWA_ADDRESS,
             SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA_TOKEN_ADDRESS,
+            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
@@ -58,18 +58,20 @@ contract MoonPieDest is MoonPieDestBase {
         );
     }
 
-    /* function test_invalidTokenAddressReverts() public {
+    function test_completeBridge_revertsIfDestinationTokenBridgeIsZero()
+        public
+    {
         MoonPie moonPie = new MoonPie(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
             WRWA_ADDRESS,
             SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA_TOKEN_ADDRESS,
+            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 1 * 1e18,
-            fromUser: Strings.toHexString(uint160(address(0))),
+            fromUser: Strings.toHexString(uint160(userAddress)),
             toUser: address(moonPie),
             fromChain: "evm.8453", // base
             nonce: 0
@@ -81,7 +83,78 @@ contract MoonPieDest is MoonPieDestBase {
         vm.stopPrank();
 
         vm.startPrank(RELAYER_ADDRESS);
+        // Use expectRevert with the encoded error including parameters
         vm.expectRevert(MoonPie.InvalidAddress.selector);
+        moonPie.completeBridge(
+            "0",
+            fulfillTx,
+            signatures,
+            address(ASSETCHAIN_USDT),
+            address(0),
+            userAddress
+        );
+    }
+
+    function test_completeBridge_revertsIfRecipientIsZero() public {
+        MoonPie moonPie = new MoonPie(
+            RELAYER_ADDRESS,
+            TREASURY_ADDRESS,
+            WRWA_ADDRESS,
+            SWAP_ROUTER_ADDRESS,
+            NATIVE_RWA,
+            MoonPie.NETWORKS.ASSET_CHAIN
+        );
+        IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
+            amount: 1 * 1e18,
+            fromUser: Strings.toHexString(uint160(userAddress)),
+            toUser: address(moonPie),
+            fromChain: "evm.8453", // base
+            nonce: 0
+        });
+        bytes[] memory signatures = _signTransaction(fulfillTx);
+
+        vm.startPrank(USDT_WHALE);
+        ERC20(ASSETCHAIN_USDT).transfer(mockBridgeAddress, 10 * 1e18);
+        vm.stopPrank();
+
+        vm.startPrank(RELAYER_ADDRESS);
+        // Use expectRevert with the encoded error including parameters
+        vm.expectRevert(MoonPie.InvalidAddress.selector);
+        moonPie.completeBridge(
+            "0",
+            fulfillTx,
+            signatures,
+            address(ASSETCHAIN_USDT),
+            mockBridgeAddress,
+            address(0) // Setting recipient to zero
+        );
+    }
+
+    function test_completeBridge_revertsIfAmountIsZero() public {
+        MoonPie moonPie = new MoonPie(
+            RELAYER_ADDRESS,
+            TREASURY_ADDRESS,
+            WRWA_ADDRESS,
+            SWAP_ROUTER_ADDRESS,
+            NATIVE_RWA,
+            MoonPie.NETWORKS.ASSET_CHAIN
+        );
+        IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
+            amount: 0, // Setting amount to zero
+            fromUser: Strings.toHexString(uint160(userAddress)),
+            toUser: address(moonPie),
+            fromChain: "evm.8453", // base
+            nonce: 0
+        });
+        bytes[] memory signatures = _signTransaction(fulfillTx);
+
+        vm.startPrank(USDT_WHALE);
+        ERC20(ASSETCHAIN_USDT).transfer(mockBridgeAddress, 10 * 1e18);
+        vm.stopPrank();
+
+        vm.startPrank(RELAYER_ADDRESS);
+        // Use expectRevert with the encoded error including parameters
+        vm.expectRevert(MoonPie.InvalidZeroAmount.selector);
         moonPie.completeBridge(
             "0",
             fulfillTx,
@@ -90,8 +163,42 @@ contract MoonPieDest is MoonPieDestBase {
             mockBridgeAddress,
             userAddress
         );
+    }
+
+    function test_completeBridge_revertsIfSourceChainNotSupported() public {
+        MoonPie moonPie = new MoonPie(
+            RELAYER_ADDRESS,
+            TREASURY_ADDRESS,
+            WRWA_ADDRESS,
+            SWAP_ROUTER_ADDRESS,
+            NATIVE_RWA,
+            MoonPie.NETWORKS.ASSET_CHAIN
+        );
+        IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
+            amount: 1 * 1e18, // Setting amount to a non-zero value
+            fromUser: Strings.toHexString(uint160(userAddress)),
+            toUser: address(moonPie),
+            fromChain: "evm.1234", // Setting fromChain to an unsupported network
+            nonce: 0
+        });
+        bytes[] memory signatures = _signTransaction(fulfillTx);
+
+        vm.startPrank(USDT_WHALE);
+        ERC20(ASSETCHAIN_USDT).transfer(mockBridgeAddress, 10 * 1e18);
         vm.stopPrank();
-    } */
+
+        vm.startPrank(RELAYER_ADDRESS);
+        // Use expectRevert with the encoded error including parameters
+        vm.expectRevert(MoonPie.SourceChainNotSupported.selector);
+        moonPie.completeBridge(
+            "0",
+            fulfillTx,
+            signatures,
+            address(ASSETCHAIN_USDT),
+            mockBridgeAddress,
+            userAddress
+        );
+    }
 
     /// @dev Fulfill a bridge transaction, from Base to Asset Chain mainnet.
     function test_bridgeFulfillmentSuccess() public {
@@ -106,11 +213,11 @@ contract MoonPieDest is MoonPieDestBase {
             TREASURY_ADDRESS,
             WRWA_ADDRESS,
             SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA_TOKEN_ADDRESS,
+            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
-            amount: 1 * 1e18,
+            amount: 1 * 1e18, // 1
             fromUser: Strings.toHexString(uint160(userAddress)),
             toUser: address(moonPie),
             fromChain: "evm.8453", // base
@@ -130,5 +237,89 @@ contract MoonPieDest is MoonPieDestBase {
 
         uint256 userRwaBalanceAfter = userAddress.balance;
         assertGt(userRwaBalanceAfter, userRwaBalanceBefore);
+    }
+
+    /* 
+  amountIn 1.000000000000000000 USDT
+  amountOut 19.473365128436706527 RWA
+   */
+    function test_bridgeTokenToRWA() public {
+        vm.startPrank(USDT_WHALE);
+        ERC20(ASSETCHAIN_USDT).transfer(mockBridgeAddress, 10 * 1e18);
+        vm.stopPrank();
+
+        // uint256 userRwaBalanceBefore = userAddress.balance;
+        // console.log("User RWA Balance Before: ", userAddress.balance/1e18);
+
+        MoonPie moonPie = new MoonPie(
+            RELAYER_ADDRESS,
+            TREASURY_ADDRESS,
+            WRWA_ADDRESS,
+            SWAP_ROUTER_ADDRESS,
+            NATIVE_RWA,
+            MoonPie.NETWORKS.ASSET_CHAIN
+        );
+        IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
+            amount: 1 * 1e18, // 1
+            fromUser: Strings.toHexString(uint160(userAddress)),
+            toUser: address(moonPie),
+            fromChain: "evm.8453", // base
+            nonce: 0
+        });
+        bytes[] memory signatures = _signTransaction(fulfillTx);
+
+        vm.startPrank(RELAYER_ADDRESS);
+        moonPie.completeBridge(
+            "0",
+            fulfillTx,
+            signatures,
+            address(ASSETCHAIN_USDT),
+            mockBridgeAddress,
+            userAddress
+        );
+
+        // uint256 userRwaBalanceAfter = userAddress.balance;
+        // console.log("User RWA Balance After: ", userRwaBalanceAfter/1e18);
+        // Assuming the expected RWA amount is 0.95 * fulfillTx.amount (95% of the amount after 5% fee)
+        // uint256 expectedRwaAmount = (fulfillTx.amount * 95) / 100;
+        // assertEq(userRwaBalanceAfter - userRwaBalanceBefore, expectedRwaAmount);
+    }
+
+
+    function test_bridgeRWAToRWA() public {
+        vm.deal(mockBridgeAddress, 20 * 1e18);
+
+        MoonPie moonPie = new MoonPie(
+            RELAYER_ADDRESS,
+            TREASURY_ADDRESS,
+            WRWA_ADDRESS,
+            SWAP_ROUTER_ADDRESS,
+            NATIVE_RWA,
+            MoonPie.NETWORKS.ASSET_CHAIN
+        );
+        IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
+            amount: 1 * 1e18, // 1
+            fromUser: Strings.toHexString(uint160(userAddress)),
+            toUser: address(moonPie),
+            fromChain: "evm.42161", // arbitrum
+            nonce: 0
+        });
+        bytes[] memory signatures = _signTransaction(fulfillTx);
+
+        vm.startPrank(RELAYER_ADDRESS);
+        moonPie.completeBridge(
+            "0",
+            fulfillTx,
+            signatures,
+            address(NATIVE_RWA),
+            mockBridgeAddress,
+            userAddress
+        );
+
+        // uint256 userRwaBalanceAfter = userAddress.balance;
+        // console.log("User RWA Balance After: ", userRwaBalanceAfter/1e18);
+        // // Assuming the expected RWA amount is 0.95 * fulfillTx.amount (95% of the amount after 5% fee)
+        // uint256 expectedRwaAmount = (fulfillTx.amount * 95) / 100;
+        // assertEq(userRwaBalanceAfter - userRwaBalanceBefore, expectedRwaAmount);
     }
 }

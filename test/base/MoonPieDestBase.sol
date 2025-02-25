@@ -23,11 +23,11 @@ contract MoonPieDestBase is Test, BaseScript {
         );
     // UsdcMock public usdc;
     string deployConfigJson;
-    address wethTokenAddress;
-    address wethBridgeAddress;
+    address usdtTokenAddress;
+    address usdtBridgeAddress;
     address public WRWA_ADDRESS;
     address public SWAP_ROUTER_ADDRESS;
-    address public NATIVE_RWA_TOKEN_ADDRESS;
+    address public NATIVE_RWA;
     uint256 ownerPrivateKey = vm.envUint("OWNER_PRV_KEY");
     address RELAYER_ADDRESS = vm.envAddress("RELAYER_ADDRESS");
     address TREASURY_ADDRESS = vm.envAddress("TREASURY_ADDRESS");
@@ -36,17 +36,20 @@ contract MoonPieDestBase is Test, BaseScript {
     address userAddress = address(1);
     address mockBridgeAddress;
     uint256 assetChainFork;
+    address RWA_BRIDGE_ADDRESS;   // assetchain
     address constant ASSETCHAIN_USDT = 0x26E490d30e73c36800788DC6d6315946C4BbEa24;
     address constant USDT_WHALE = 0xfb1B5ABC46aB3A191c800056514098D9e720F5A8;   // assetchain
+    address constant RWA_WHALE = 0x5195aD65E40C79E11661486B39978ff268f3B342;   // assetchain
 
     function setUp() public {
         assetChainFork = vm.createFork(ASSETCHAIN_RPC_URL);
         deployConfigJson = getDeployConfigJson();
-        // wethTokenAddress = deployConfigJson.readAddress(".weth.tokenAddress");
-        // wethBridgeAddress = deployConfigJson.readAddress(".weth.bridgeAddress");
+        usdtTokenAddress = deployConfigJson.readAddress(".usdt.tokenAddress");
+        usdtBridgeAddress = deployConfigJson.readAddress(".usdt.bridgeAddress");
+        RWA_BRIDGE_ADDRESS = deployConfigJson.readAddress(".rwa.bridgeAddress");
         WRWA_ADDRESS = deployConfigJson.readAddress(".wrwaAddress");
         SWAP_ROUTER_ADDRESS = deployConfigJson.readAddress(".swapRouterAddress");
-        NATIVE_RWA_TOKEN_ADDRESS = deployConfigJson.readAddress(".nativeRwaTokenAddress");
+        NATIVE_RWA = deployConfigJson.readAddress(".nativeRwaTokenAddress");
         deployBridgeAssistMock();
     }
 

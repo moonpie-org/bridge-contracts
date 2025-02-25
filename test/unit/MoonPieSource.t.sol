@@ -83,8 +83,8 @@ contract MoonPieSource is MoonPieSourceBase {
         usdc.approve(address(moonPie), usdc.balanceOf(userAddress));
 
         // Only check that a BridgeInitiated event was emitted, ignore parameter values
-        vm.expectEmit(false, false, false, false);
-        emit MoonPie.BridgeInitiated(bytes32(0), 0);
+        vm.expectEmit(false, false, false,false);
+        emit MoonPie.BridgeInitiated(bytes32(0),"", 0);
         moonPie.bridge(
             mockTokenAddress,
             mockBridgeAddress,
@@ -94,7 +94,7 @@ contract MoonPieSource is MoonPieSourceBase {
 
         // ensure bridge received funds
         uint256 afterBalance = usdc.balanceOf(mockBridgeAddress);
-        assertEq(afterBalance - beforeBalance, 99 * 1e5);
+        assertEq(afterBalance - beforeBalance, 99 * 1e5);   //  9.9
 
         // ensure moonpie treasury got expected fee
         uint256 treasuryBalanceAfter = usdc.balanceOf(TREASURY_ADDRESS);

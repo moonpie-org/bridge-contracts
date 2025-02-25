@@ -7,6 +7,7 @@ import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import {IBridgeAssist} from "./interfaces/IBridgeAssist.sol";
 import "./interfaces/IWRWA.sol";
 import "forge-std/console.sol";
@@ -46,11 +47,14 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
     mapping(bytes32 => BridgeTransaction) public bridgeTransactions;
 
     // events
-    event BridgeInitiated(bytes32 indexed requestId, uint256 amount);
+    event BridgeInitiated(
+        bytes32 indexed requestId,
+        string indexed recipient,
+        uint256 amount
+    );
     event BridgeCompleted(
         bytes32 indexed requestId,
-        address indexed user,
-        address indexed token,
+        address indexed recipient,
         uint256 amount
     );
 
@@ -147,17 +151,11 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
             supportedNetwork[NETWORKS.ASSET_CHAIN].network
         );
 
-        emit BridgeInitiated(requestId, amountAfterFee);
+        emit BridgeInitiated(requestId, recipient, amountAfterFee);
     }
 
     /// @dev This method is called by the relayer to complete the bridge transaction.
     /// @dev It should only be called on the destination chain.
-    /// @param sourceChainTxnId The transaction ID on the source chain.
-    /// @param fulfillTx The FulfillTx struct containing transaction details.
-    /// @param signatures The signatures to verify the transaction.
-    /// @param token The address of the token being bridged.
-    /// @param destinationTokenBridge The address of the token bridge on the destination chain.
-    /// @param recipient The address of the recipient on the destination chain.
     function completeBridge(
         bytes32 sourceChainTxnId,
         IBridgeAssist.FulfillTx memory fulfillTx,
@@ -166,50 +164,66 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
         address destinationTokenBridge,
         address recipient
     ) public onlyRelayer nonReentrant {
-        if (
-            keccak256(abi.encodePacked(fulfillTx.fromUser)) ==
-            keccak256(abi.encodePacked(address(0))) ||
-            keccak256(abi.encodePacked(fulfillTx.toUser)) ==
-            keccak256(abi.encodePacked(address(0)))
-        ) {
-            revert InvalidAddress();
-        }
+        if (destinationTokenBridge == address(0)) revert InvalidAddress();
+        if (recipient == address(0)) revert InvalidAddress();
+        if (fulfillTx.amount == 0) revert InvalidZeroAmount();
+        if (token == address(0)) revert InvalidAddress();
 
         if (
-            !stringsMatch(
-                fulfillTx.fromChain,
-                supportedNetwork[NETWORKS.BASE].network
-            ) &&
-            !stringsMatch(
-                fulfillTx.fromChain,
-                supportedNetwork[NETWORKS.ARBITRUM].network
-            )
+            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BASE &&
+            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ARBITRUM
         ) {
             revert SourceChainNotSupported();
         }
 
-        if (fulfillTx.amount == 0) {
-            revert InvalidZeroAmount();
+        // After fulfill, bridge might decide to charge fee.
+        // the amount user gets after swap should depend on amount
+        // we got after the fulfill txn, not the intended amount
+        // the relayer started with.
+        uint256 amountReceived;
+        if (token == NATIVE_RWA_TOKEN) {
+            uint256 ethBalanceBefore = address(this).balance;
+            IBridgeAssist(destinationTokenBridge).fulfill(
+                fulfillTx,
+                signatures
+            );
+
+            uint256 ethBalanceAfter = address(this).balance;
+            amountReceived = ethBalanceAfter - ethBalanceBefore;
+        } else {
+            uint256 tokenBalanceBefore = IERC20(token).balanceOf(address(this));
+            IBridgeAssist(destinationTokenBridge).fulfill(
+                fulfillTx,
+                signatures
+            );
+
+            uint256 tokenBalanceAfter = IERC20(token).balanceOf(address(this));
+            amountReceived = tokenBalanceAfter - tokenBalanceBefore;
         }
 
-        IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
-
+        uint256 amountUserRecieved;
         if (token == NATIVE_RWA_TOKEN) {
-            payable(fulfillTx.toUser).transfer(fulfillTx.amount);
+            payable(fulfillTx.toUser).transfer(amountReceived);
+            amountUserRecieved = amountReceived;
         } else {
-            uint256 rwaAmount = swapAssetForRWA(
+            amountUserRecieved = swapAssetForRWA(
                 token,
-                fulfillTx.amount,
+                amountReceived,
                 recipient
             );
-
-            emit BridgeCompleted(
-                sourceChainTxnId,
-                recipient,
-                NATIVE_RWA_TOKEN,
-                rwaAmount
-            );
         }
+
+        bridgeTransactions[sourceChainTxnId] = BridgeTransaction(
+            Strings.toHexString(uint160(recipient)),
+            token,
+            destinationTokenBridge,
+            amountUserRecieved,
+            0,
+            getNetworkFromChainId(fulfillTx.fromChain),
+            CURRENT_CHAIN
+        );
+
+        emit BridgeCompleted(sourceChainTxnId, recipient, amountUserRecieved);
     }
 
     function swapAssetForRWA(
@@ -218,9 +232,8 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
         address _recipient
     ) internal returns (uint256) {
         IERC20(token).approve(address(SWAP_ROUTER), amount);
-
-        (bool exists, ) = checkPool(token, address(WRWA), 3000);
-        if (!exists) {
+        (address bestPool, uint24 fee, ) = findBestPool(token, address(WRWA));
+        if (bestPool == address(0)) {
             revert SwapPoolDoesNotExist();
         }
 
@@ -228,7 +241,7 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
             .ExactInputSingleParams({
                 tokenIn: token,
                 tokenOut: address(WRWA),
-                fee: 3000, // 0.3%
+                fee: fee, // 0.3%
                 recipient: address(this),
                 deadline: block.timestamp + 300, // 5 min
                 amountIn: amount,
@@ -250,7 +263,6 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
         }
     }
 
-    // Allow setting the fee percentage
     function setFeePercentage(uint256 newFeePercentage) public onlyOwner {
         FEE_PERCENTAGE = newFeePercentage;
     }
@@ -282,6 +294,27 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
         string memory b
     ) internal pure returns (bool) {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
+    }
+
+    function getNetworkFromChainId(
+        string memory chainId
+    ) public view returns (NETWORKS) {
+        if (stringsMatch(chainId, supportedNetwork[NETWORKS.BASE].network)) {
+            return NETWORKS.BASE;
+        } else if (
+            stringsMatch(chainId, supportedNetwork[NETWORKS.ARBITRUM].network)
+        ) {
+            return NETWORKS.ARBITRUM;
+        } else if (
+            stringsMatch(
+                chainId,
+                supportedNetwork[NETWORKS.ASSET_CHAIN].network
+            )
+        ) {
+            return NETWORKS.ASSET_CHAIN;
+        } else {
+            revert SourceChainNotSupported();
+        }
     }
 
     receive() external payable {}

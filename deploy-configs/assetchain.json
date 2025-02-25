@@ -5,13 +5,17 @@
     "wrwaAddress": "0x2584D40B5553E81Bb9deC0b6CD1a2E504AAB1709",
     "swapRouterAddress": "0xEC2B2209D710D4283b5d1e29441Df0Dbb9ceE5c3",
     "nativeRwaTokenAddress": "0x0000000000000000000000000000000000000001",
-    "usdc": {
-      "bridgeAddress": "",
-      "tokenAddress": ""
+    "usdt": {
+      "bridgeAddress": "0x196434734f09DFE6D479b5a248a45cfbe516382a",
+      "tokenAddress": "0x26E490d30e73c36800788DC6d6315946C4BbEa24"
     },
     "weth": {
       "bridgeAddress": "",
       "tokenAddress": ""
+    },
+    "rwa": {
+      "bridgeAddress": "0x4f7C5492919e1dB5Bf667D6397e54B41bB93146c",
+      "tokenAddress": "0x0000000000000000000000000000000000000001"
     }
   }
   
