@@ -2,7 +2,6 @@ pragma solidity ^0.8.22;
 
 import {Test} from "forge-std/Test.sol";
 import "forge-std/console.sol";
-import {MoonPie} from "src/MoonPie.sol";
 import {UsdcMock} from "../mocks/UsdcMock.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IBridgeAssist} from "src/interfaces/IBridgeAssist.sol";
@@ -22,27 +21,34 @@ contract MoonPieSourceBase is Test, BaseScript {
             "FulfillTx(uint256 amount,string fromUser,address toUser,string fromChain,uint256 nonce)"
         );
     UsdcMock public usdc;
-    string deployConfigJson = getDeployConfigJson();
-    address wethTokenAddress = deployConfigJson.readAddress(".weth.tokenAddress");
-    address wethBridgeAddress = deployConfigJson.readAddress(".weth.bridgeAddress");
-    uint256 ownerPrivateKey = vm.envUint("OWNER_PRV_KEY");
-    address RELAYER_ADDRESS = vm.envAddress("RELAYER_ADDRESS");
-    address TREASURY_ADDRESS = vm.envAddress("TREASURY_ADDRESS");
-    string ASSETCHAIN_RPC_URL = vm.envString("ASSETCHAIN_RPC_URL");
-    address public WRWA_ADDRESS = deployConfigJson.readAddress(".wrwaAddress");
-    address public SWAP_ROUTER_ADDRESS = deployConfigJson.readAddress(".swapRouterAddress");
-    address public NATIVE_RWA_TOKEN_ADDRESS = deployConfigJson.readAddress(".nativeRwaTokenAddress");
-    // address usdcTokenAddress;
+    string deployConfigJson;
+    uint256 ownerPrivateKey;
+    address RELAYER_ADDRESS;
+    address TREASURY_ADDRESS;
+    string ASSETCHAIN_RPC_URL;
     address usdcBridgeAddress;
     address userAddress = address(this);
     address mockTokenAddress;
     address mockBridgeAddress;
     uint256 assetChainFork;
-    address constant ASSETCHAIN_USDC = 0x2B7C1342Cc64add10B2a79C8f9767d2667DE64B2;
-    address constant USDC_WHALE = 0x6d297BF599845101A84387C6D5962cC21495d5A2;   // assetchain
+    address constant ASSETCHAIN_USDC =
+        0x2B7C1342Cc64add10B2a79C8f9767d2667DE64B2;
+    address constant USDC_WHALE = 0x6d297BF599845101A84387C6D5962cC21495d5A2; // assetchain
 
     function setUp() public {
+        // First load environment variables
+        RELAYER_ADDRESS = vm.envAddress("RELAYER_ADDRESS");
+        TREASURY_ADDRESS = vm.envAddress("TREASURY_ADDRESS");
+        ASSETCHAIN_RPC_URL = vm.envString("ASSETCHAIN_RPC_URL");
+        ownerPrivateKey = vm.envUint("OWNER_PRV_KEY");
+        
+        // Then create the fork
         assetChainFork = vm.createFork(ASSETCHAIN_RPC_URL);
+        
+        // Then load the JSON config
+        deployConfigJson = getDeployConfigJson();
+        
+        // Finally deploy the mocks
         deployUsdcMock();
         deployBridgeAssistMock();
     }

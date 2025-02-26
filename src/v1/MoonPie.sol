@@ -8,11 +8,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import {IBridgeAssist} from "./interfaces/IBridgeAssist.sol";
-import "./interfaces/IWRWA.sol";
+import {IBridgeAssist} from "../interfaces/IBridgeAssist.sol";
+import "../interfaces/IWRWA.sol";
 import "forge-std/console.sol";
-import "./utils/UniswapPoolChecker.sol";
+import "../utils/UniswapPoolChecker.sol";
 
+/// @title MoonPieV2
+/// @author Ebube Okorie - @kelviniot
+/// @dev MoonPie bridges tokens across chains, then swaps token for RWA on Asset Chain.
 contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
     enum NETWORKS {
         ASSET_CHAIN,
@@ -34,9 +37,11 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
         NETWORKS fromChain;
         NETWORKS toChain;
     }
-    IWRWA public WRWA;
-    ISwapRouter public SWAP_ROUTER;
-    address public NATIVE_RWA_TOKEN;
+    IWRWA public WRWA = IWRWA(0x2584D40B5553E81Bb9deC0b6CD1a2E504AAB1709);
+    ISwapRouter public SWAP_ROUTER =
+        ISwapRouter(0xEC2B2209D710D4283b5d1e29441Df0Dbb9ceE5c3);
+    address public NATIVE_RWA_TOKEN =
+        0x0000000000000000000000000000000000000001;
     uint256 public FEE_PERCENTAGE = 1; // 1% moonpie fee
 
     address public RELAYER_ADDRESS;
@@ -75,14 +80,8 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
     constructor(
         address _relayerAddress,
         address _treasuryAddress,
-        address _wrwa,
-        address _swapRouter,
-        address _nativeRwaToken,
         NETWORKS _currentChain
     ) Ownable(msg.sender) {
-        WRWA = IWRWA(_wrwa);
-        SWAP_ROUTER = ISwapRouter(_swapRouter);
-        NATIVE_RWA_TOKEN = _nativeRwaToken;
         RELAYER_ADDRESS = _relayerAddress;
         TREASURY_ADDRESS = _treasuryAddress;
         CURRENT_CHAIN = _currentChain;
@@ -203,7 +202,7 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
 
         uint256 amountUserRecieved;
         if (token == NATIVE_RWA_TOKEN) {
-            payable(fulfillTx.toUser).transfer(amountReceived);
+            payable(recipient).transfer(amountReceived);
             amountUserRecieved = amountReceived;
         } else {
             amountUserRecieved = swapAssetForRWA(

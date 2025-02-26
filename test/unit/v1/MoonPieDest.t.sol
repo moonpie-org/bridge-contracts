@@ -3,26 +3,23 @@ pragma solidity ^0.8.22;
 
 import {Test} from "forge-std/Test.sol";
 import "forge-std/console.sol";
-import {MoonPie} from "src/MoonPie.sol";
+import {MoonPie} from "src/v1/MoonPie.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IBridgeAssist} from "src/interfaces/IBridgeAssist.sol";
 import {BaseScript, stdJson, console2} from "script/base.s.sol";
 import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
-import {BridgeAssistTransferUpgradeable} from "../mocks/BridgeAssistTransferUpgradeable.sol";
+import {BridgeAssistTransferUpgradeable} from "../../mocks/BridgeAssistTransferUpgradeable.sol";
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "forge-std/console2.sol";
-import "../base/MoonPieDestBase.sol";
+import "../../base/MoonPieDestBase.sol";
 
 contract MoonPieDest is MoonPieDestBase {
     function test_initialize() public {
         MoonPie moonPie = new MoonPie(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            WRWA_ADDRESS,
-            SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         assertEq(moonPie.RELAYER_ADDRESS(), RELAYER_ADDRESS);
@@ -32,9 +29,6 @@ contract MoonPieDest is MoonPieDestBase {
         MoonPie moonPie = new MoonPie(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            WRWA_ADDRESS,
-            SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
@@ -44,7 +38,7 @@ contract MoonPieDest is MoonPieDestBase {
             fromChain: "evm.8453", // base
             nonce: 0
         });
-        bytes[] memory signatures = _signTransaction(fulfillTx);
+        bytes[] memory signatures = _signTransaction(fulfillTx,mockBridgeAddress);
 
         // Use expectRevert with the encoded error including parameters
         vm.expectRevert(MoonPie.OnlyRelayerAllowed.selector);
@@ -64,9 +58,6 @@ contract MoonPieDest is MoonPieDestBase {
         MoonPie moonPie = new MoonPie(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            WRWA_ADDRESS,
-            SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
@@ -76,7 +67,7 @@ contract MoonPieDest is MoonPieDestBase {
             fromChain: "evm.8453", // base
             nonce: 0
         });
-        bytes[] memory signatures = _signTransaction(fulfillTx);
+        bytes[] memory signatures = _signTransaction(fulfillTx,mockBridgeAddress);
 
         vm.startPrank(USDT_WHALE);
         ERC20(ASSETCHAIN_USDT).transfer(mockBridgeAddress, 10 * 1e18);
@@ -99,9 +90,6 @@ contract MoonPieDest is MoonPieDestBase {
         MoonPie moonPie = new MoonPie(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            WRWA_ADDRESS,
-            SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
@@ -111,7 +99,7 @@ contract MoonPieDest is MoonPieDestBase {
             fromChain: "evm.8453", // base
             nonce: 0
         });
-        bytes[] memory signatures = _signTransaction(fulfillTx);
+        bytes[] memory signatures = _signTransaction(fulfillTx,mockBridgeAddress);
 
         vm.startPrank(USDT_WHALE);
         ERC20(ASSETCHAIN_USDT).transfer(mockBridgeAddress, 10 * 1e18);
@@ -134,9 +122,6 @@ contract MoonPieDest is MoonPieDestBase {
         MoonPie moonPie = new MoonPie(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            WRWA_ADDRESS,
-            SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
@@ -146,7 +131,7 @@ contract MoonPieDest is MoonPieDestBase {
             fromChain: "evm.8453", // base
             nonce: 0
         });
-        bytes[] memory signatures = _signTransaction(fulfillTx);
+        bytes[] memory signatures = _signTransaction(fulfillTx,mockBridgeAddress);
 
         vm.startPrank(USDT_WHALE);
         ERC20(ASSETCHAIN_USDT).transfer(mockBridgeAddress, 10 * 1e18);
@@ -169,9 +154,6 @@ contract MoonPieDest is MoonPieDestBase {
         MoonPie moonPie = new MoonPie(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            WRWA_ADDRESS,
-            SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
@@ -181,7 +163,7 @@ contract MoonPieDest is MoonPieDestBase {
             fromChain: "evm.1234", // Setting fromChain to an unsupported network
             nonce: 0
         });
-        bytes[] memory signatures = _signTransaction(fulfillTx);
+        bytes[] memory signatures = _signTransaction(fulfillTx,mockBridgeAddress);
 
         vm.startPrank(USDT_WHALE);
         ERC20(ASSETCHAIN_USDT).transfer(mockBridgeAddress, 10 * 1e18);
@@ -211,9 +193,6 @@ contract MoonPieDest is MoonPieDestBase {
         MoonPie moonPie = new MoonPie(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            WRWA_ADDRESS,
-            SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
@@ -223,7 +202,7 @@ contract MoonPieDest is MoonPieDestBase {
             fromChain: "evm.8453", // base
             nonce: 0
         });
-        bytes[] memory signatures = _signTransaction(fulfillTx);
+        bytes[] memory signatures = _signTransaction(fulfillTx,mockBridgeAddress);
 
         vm.startPrank(RELAYER_ADDRESS);
         moonPie.completeBridge(
@@ -248,15 +227,11 @@ contract MoonPieDest is MoonPieDestBase {
         ERC20(ASSETCHAIN_USDT).transfer(mockBridgeAddress, 10 * 1e18);
         vm.stopPrank();
 
-        // uint256 userRwaBalanceBefore = userAddress.balance;
-        // console.log("User RWA Balance Before: ", userAddress.balance/1e18);
+        uint256 userRwaBalanceBefore = userAddress.balance;
 
         MoonPie moonPie = new MoonPie(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            WRWA_ADDRESS,
-            SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
@@ -266,7 +241,7 @@ contract MoonPieDest is MoonPieDestBase {
             fromChain: "evm.8453", // base
             nonce: 0
         });
-        bytes[] memory signatures = _signTransaction(fulfillTx);
+        bytes[] memory signatures = _signTransaction(fulfillTx,mockBridgeAddress);
 
         vm.startPrank(RELAYER_ADDRESS);
         moonPie.completeBridge(
@@ -278,23 +253,18 @@ contract MoonPieDest is MoonPieDestBase {
             userAddress
         );
 
-        // uint256 userRwaBalanceAfter = userAddress.balance;
-        // console.log("User RWA Balance After: ", userRwaBalanceAfter/1e18);
-        // Assuming the expected RWA amount is 0.95 * fulfillTx.amount (95% of the amount after 5% fee)
-        // uint256 expectedRwaAmount = (fulfillTx.amount * 95) / 100;
-        // assertEq(userRwaBalanceAfter - userRwaBalanceBefore, expectedRwaAmount);
+        uint256 userRwaBalanceAfter = userAddress.balance;
+        assertGt(userRwaBalanceAfter, userRwaBalanceBefore);
     }
 
 
     function test_bridgeRWAToRWA() public {
-        vm.deal(mockBridgeAddress, 20 * 1e18);
-
+        vm.deal(mockNativeBridgeAddress, 20 * 1e18);
+        uint256 userRwaBalanceBefore = userAddress.balance;
+        
         MoonPie moonPie = new MoonPie(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            WRWA_ADDRESS,
-            SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA,
             MoonPie.NETWORKS.ASSET_CHAIN
         );
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
@@ -304,7 +274,7 @@ contract MoonPieDest is MoonPieDestBase {
             fromChain: "evm.42161", // arbitrum
             nonce: 0
         });
-        bytes[] memory signatures = _signTransaction(fulfillTx);
+        bytes[] memory signatures = _signTransaction(fulfillTx,mockNativeBridgeAddress);
 
         vm.startPrank(RELAYER_ADDRESS);
         moonPie.completeBridge(
@@ -312,14 +282,11 @@ contract MoonPieDest is MoonPieDestBase {
             fulfillTx,
             signatures,
             address(NATIVE_RWA),
-            mockBridgeAddress,
+            mockNativeBridgeAddress,
             userAddress
         );
 
-        // uint256 userRwaBalanceAfter = userAddress.balance;
-        // console.log("User RWA Balance After: ", userRwaBalanceAfter/1e18);
-        // // Assuming the expected RWA amount is 0.95 * fulfillTx.amount (95% of the amount after 5% fee)
-        // uint256 expectedRwaAmount = (fulfillTx.amount * 95) / 100;
-        // assertEq(userRwaBalanceAfter - userRwaBalanceBefore, expectedRwaAmount);
+        uint256 userRwaBalanceAfter = userAddress.balance;
+        assertGt(userRwaBalanceAfter, userRwaBalanceBefore);
     }
 }

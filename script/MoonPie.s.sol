@@ -2,7 +2,7 @@
 pragma solidity ^0.8.22;
 
 import {Script, console} from "forge-std/Script.sol";
-import {MoonPie} from "src/MoonPie.sol";
+import {MoonPie} from "src/v1/MoonPie.sol";
 
 contract MoonPieScript is Script {
     uint256 ownerPrivateKey = vm.envUint("OWNER_PRV_KEY");
@@ -20,13 +20,9 @@ contract MoonPieScript is Script {
     // main entry point of the script
     function run() public {
         vm.startBroadcast(ownerPrivateKey);
-
         new MoonPie(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            WRWA_ADDRESS,
-            SWAP_ROUTER_ADDRESS,
-            NATIVE_RWA_TOKEN_ADDRESS,
             MoonPie.NETWORKS.BASE
         );
 
