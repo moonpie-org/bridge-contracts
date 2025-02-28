@@ -15,6 +15,7 @@ rpc_url = "http://127.0.0.1:8545" # Anvil's default RPC URL
 solc_version = "0.8.22"
 forge-std = "latest"
 via_ir = true
+evm_version = "paris" 
 
 # OZ upgrades
 ffi = true

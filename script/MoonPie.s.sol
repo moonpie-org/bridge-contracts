@@ -2,17 +2,13 @@
 pragma solidity ^0.8.22;
 
 import {Script, console} from "forge-std/Script.sol";
-import {MoonPie} from "src/v1/MoonPie.sol";
+import {MoonPieV2} from "src/v2/MoonPieV2.sol";
 
 contract MoonPieScript is Script {
     uint256 ownerPrivateKey = vm.envUint("OWNER_PRV_KEY");
 
     address RELAYER_ADDRESS = vm.envAddress("RELAYER_ADDRESS");
     address TREASURY_ADDRESS = vm.envAddress("TREASURY_ADDRESS");
-    address WRWA_ADDRESS = vm.envAddress("WRWA_ADDRESS");
-    address SWAP_ROUTER_ADDRESS = vm.envAddress("SWAP_ROUTER_ADDRESS");
-    address NATIVE_RWA_TOKEN_ADDRESS =
-        vm.envAddress("NATIVE_RWA_TOKEN_ADDRESS");
 
     // set up initial conditions or requirements
     function setUp() public {}
@@ -20,11 +16,14 @@ contract MoonPieScript is Script {
     // main entry point of the script
     function run() public {
         vm.startBroadcast(ownerPrivateKey);
-        new MoonPie(
+        MoonPieV2 moonPie = new MoonPieV2(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            MoonPie.NETWORKS.BASE
+            MoonPieV2.NETWORKS.ASSET_CHAIN
         );
+        console.log("MOONPIE", address(moonPie));
+
+        moonPie.setFeePercentage(2); // Set the fee percentage to 2%
 
         vm.stopBroadcast();
     }
