@@ -11,6 +11,7 @@ import {BridgeAssistTransferUpgradeable} from "../mocks/BridgeAssistTransferUpgr
 import {BridgeAssistNativeUpgradeable} from "../mocks/BridgeAssistNativeUpgradeable.sol";
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MoonPieV2} from "src/v2/MoonPieV2.sol";
 
 import "forge-std/console2.sol";
 
@@ -154,6 +155,12 @@ contract MoonPieDestBase is Test, BaseScript {
             exchangeRatesFromPow
         );
         vm.stopPrank();
+    }
+
+    function addSupportedNetworks(MoonPieV2 moonPie) public {
+        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.ASSET_CHAIN,"evm.42420");
+        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BASE, "evm.8453");
+        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.ARBITRUM, "evm.42161");
     }
 
     function _signTransaction(

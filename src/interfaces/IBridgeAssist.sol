@@ -71,4 +71,11 @@ interface IBridgeAssist {
      * @return The maximum amount that can be sent
      */
     function limitPerSend() external view returns (uint256);
+
+
+    /// @dev returns the amount of bridge transactions sent by `user`
+    ///   from the current chain
+    /// @param user user
+    /// @return amount of transactions
+    function getUserTransactionsAmount(address user) external view returns (uint256);
 }

@@ -34,8 +34,8 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
         address tokenBridge;
         uint256 amountAfterFee;
         uint256 fee;
-        NETWORKS fromChain;
-        NETWORKS toChain;
+        string fromChain;
+        string toChain;
     }
     IWRWA public WRWA = IWRWA(0x2584D40B5553E81Bb9deC0b6CD1a2E504AAB1709);
     ISwapRouter public SWAP_ROUTER =
@@ -139,8 +139,8 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
             tokenBridge,
             amountAfterFee,
             fee,
-            CURRENT_CHAIN,
-            NETWORKS.ASSET_CHAIN
+            supportedNetwork[CURRENT_CHAIN].network,
+            supportedNetwork[NETWORKS.ASSET_CHAIN].network
         );
 
         IERC20(token).approve(tokenBridge, amountAfterFee);
@@ -218,8 +218,8 @@ contract MoonPie is Ownable, ReentrancyGuard, UniswapPoolChecker {
             destinationTokenBridge,
             amountUserRecieved,
             0,
-            getNetworkFromChainId(fulfillTx.fromChain),
-            CURRENT_CHAIN
+            fulfillTx.fromChain,
+            supportedNetwork[CURRENT_CHAIN].network
         );
 
         emit BridgeCompleted(sourceChainTxnId, recipient, amountUserRecieved);

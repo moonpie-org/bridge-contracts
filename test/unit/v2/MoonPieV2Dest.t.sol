@@ -31,6 +31,8 @@ contract MoonPieV2Dest is MoonPieDestBase {
             TREASURY_ADDRESS,
             MoonPieV2.NETWORKS.ASSET_CHAIN
         );
+        addSupportedNetworks(moonPie);
+
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 1 * 1e18,
             fromUser: Strings.toHexString(uint160(userAddress)),
@@ -60,6 +62,8 @@ contract MoonPieV2Dest is MoonPieDestBase {
             TREASURY_ADDRESS,
             MoonPieV2.NETWORKS.ASSET_CHAIN
         );
+        addSupportedNetworks(moonPie);
+
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 1 * 1e18,
             fromUser: Strings.toHexString(uint160(userAddress)),
@@ -92,6 +96,8 @@ contract MoonPieV2Dest is MoonPieDestBase {
             TREASURY_ADDRESS,
             MoonPieV2.NETWORKS.ASSET_CHAIN
         );
+        addSupportedNetworks(moonPie);
+        
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 1 * 1e18,
             fromUser: Strings.toHexString(uint160(userAddress)),
@@ -124,6 +130,8 @@ contract MoonPieV2Dest is MoonPieDestBase {
             TREASURY_ADDRESS,
             MoonPieV2.NETWORKS.ASSET_CHAIN
         );
+        addSupportedNetworks(moonPie);
+        
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 0, // Setting amount to zero
             fromUser: Strings.toHexString(uint160(userAddress)),
@@ -156,6 +164,8 @@ contract MoonPieV2Dest is MoonPieDestBase {
             TREASURY_ADDRESS,
             MoonPieV2.NETWORKS.ASSET_CHAIN
         );
+        addSupportedNetworks(moonPie);
+        
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 1 * 1e18, // Setting amount to a non-zero value
             fromUser: Strings.toHexString(uint160(userAddress)),
@@ -197,6 +207,8 @@ contract MoonPieV2Dest is MoonPieDestBase {
             TREASURY_ADDRESS,
             MoonPieV2.NETWORKS.ASSET_CHAIN
         );
+        addSupportedNetworks(moonPie);
+        
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 1 * 1e18, // 1
             fromUser: Strings.toHexString(uint160(userAddress)),
@@ -236,6 +248,8 @@ contract MoonPieV2Dest is MoonPieDestBase {
             TREASURY_ADDRESS,
             MoonPieV2.NETWORKS.ASSET_CHAIN
         );
+        addSupportedNetworks(moonPie);
+        
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 1 * 1e18, // 1
             fromUser: Strings.toHexString(uint160(userAddress)),
@@ -271,6 +285,8 @@ contract MoonPieV2Dest is MoonPieDestBase {
             TREASURY_ADDRESS,
             MoonPieV2.NETWORKS.ASSET_CHAIN
         );
+        addSupportedNetworks(moonPie);
+        
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 1 * 1e18, // 1
             fromUser: Strings.toHexString(uint160(userAddress)),

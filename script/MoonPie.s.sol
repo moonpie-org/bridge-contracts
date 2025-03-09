@@ -19,11 +19,15 @@ contract MoonPieScript is Script {
         MoonPieV2 moonPie = new MoonPieV2(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            MoonPieV2.NETWORKS.ASSET_CHAIN
+            MoonPieV2.NETWORKS.ARBITRUM // this needs to be changed on deployment, depending on the network being deployed to.
         );
         console.log("MOONPIE", address(moonPie));
 
         moonPie.setFeePercentage(2); // Set the fee percentage to 2%
+
+        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.ASSET_CHAIN, "evm.42421");
+        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BASE, "evm.84532");
+        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.ARBITRUM, "evm.421614");
 
         vm.stopBroadcast();
     }

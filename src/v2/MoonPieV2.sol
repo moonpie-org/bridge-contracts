@@ -33,12 +33,15 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         address tokenBridge;
         uint256 amountAfterFee;
         uint256 fee;
-        NETWORKS fromChain;
-        NETWORKS toChain;
+        string fromChain;
+        string toChain;
+        uint256 index;
     }
-    IWRWA public WRWA = IWRWA(0x2584D40B5553E81Bb9deC0b6CD1a2E504AAB1709);  //  assetchain mainnet
-    ISwapRouter public SWAP_ROUTER = ISwapRouter(0xEC2B2209D710D4283b5d1e29441Df0Dbb9ceE5c3);   //  assetchain mainnet
-    address public NATIVE_RWA_TOKEN = 0x0000000000000000000000000000000000000001;   //  assetchain mainnet
+    IWRWA public WRWA = IWRWA(0x2584D40B5553E81Bb9deC0b6CD1a2E504AAB1709); //  assetchain mainnet
+    ISwapRouter public SWAP_ROUTER =
+        ISwapRouter(0xEC2B2209D710D4283b5d1e29441Df0Dbb9ceE5c3); //  assetchain mainnet
+    address public NATIVE_RWA_TOKEN =
+        0x0000000000000000000000000000000000000001; //  assetchain mainnet
     uint256 public FEE_PERCENTAGE = 1; // 1% moonpie fee
 
     address public RELAYER_ADDRESS;
@@ -79,14 +82,9 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         address _treasuryAddress,
         NETWORKS _currentChain
     ) Ownable(msg.sender) {
-
         RELAYER_ADDRESS = _relayerAddress;
         TREASURY_ADDRESS = _treasuryAddress;
         CURRENT_CHAIN = _currentChain;
-
-        setSupportedNetwork(NETWORKS.ASSET_CHAIN, "evm.42420");
-        setSupportedNetwork(NETWORKS.BASE, "evm.8453");
-        setSupportedNetwork(NETWORKS.ARBITRUM, "evm.42161");
     }
 
     modifier onlyRelayer() {
@@ -107,6 +105,9 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         if (amount == 0) {
             revert InvalidZeroAmount();
         }
+
+        uint256 currentUserIndex = IBridgeAssist(tokenBridge)
+            .getUserTransactionsAmount(address(this));
 
         // on other chains we're only bridging erc20 tokens
         // we only deal with native tokens on assetchain
@@ -137,8 +138,9 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
             tokenBridge,
             amountAfterFee,
             fee,
-            CURRENT_CHAIN,
-            NETWORKS.ASSET_CHAIN
+            supportedNetwork[CURRENT_CHAIN].network,
+            supportedNetwork[NETWORKS.ASSET_CHAIN].network,
+            currentUserIndex
         );
 
         IERC20(token).approve(tokenBridge, amountAfterFee);
@@ -213,8 +215,9 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
             destinationTokenBridge,
             amountUserRecieved,
             0,
-            getNetworkFromChainId(fulfillTx.fromChain),
-            CURRENT_CHAIN
+            fulfillTx.fromChain,
+            supportedNetwork[CURRENT_CHAIN].network,
+            0 // We don't track userIndex for completed bridges since it's handled by the relayer
         );
 
         emit BridgeCompleted(sourceChainTxnId, recipient, amountUserRecieved);
@@ -232,18 +235,18 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         TREASURY_ADDRESS = _treasuryAddress;
     }
 
-    function calculateMoonPieFee(uint256 amount) public view returns (uint256) {
-        return (amount * FEE_PERCENTAGE) / 100;
-    }
-
     function setSupportedNetwork(
         NETWORKS network,
         string memory networkId
-    ) internal {
+    ) public onlyOwner {
         supportedNetwork[network] = NetworkInfo({
             isExists: true,
             network: networkId
         });
+    }
+
+    function calculateMoonPieFee(uint256 amount) public view returns (uint256) {
+        return (amount * FEE_PERCENTAGE) / 100;
     }
 
     function stringsMatch(
