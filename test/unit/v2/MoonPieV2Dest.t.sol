@@ -212,7 +212,7 @@ contract MoonPieV2Dest is MoonPieDestBase {
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 1 * 1e18, // 1
             fromUser: Strings.toHexString(uint160(userAddress)),
-            toUser: address(moonPie),
+            toUser:userAddress,
             fromChain: "evm.8453", // base
             nonce: 0
         });
@@ -253,7 +253,7 @@ contract MoonPieV2Dest is MoonPieDestBase {
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 1 * 1e18, // 1
             fromUser: Strings.toHexString(uint160(userAddress)),
-            toUser: address(moonPie),
+            toUser: userAddress,
             fromChain: "evm.8453", // base
             nonce: 0
         });
@@ -290,7 +290,7 @@ contract MoonPieV2Dest is MoonPieDestBase {
         IBridgeAssist.FulfillTx memory fulfillTx = IBridgeAssist.FulfillTx({
             amount: 1 * 1e18, // 1
             fromUser: Strings.toHexString(uint160(userAddress)),
-            toUser: address(moonPie),
+            toUser: userAddress,
             fromChain: "evm.42161", // arbitrum
             nonce: 0
         });

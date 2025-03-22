@@ -19,7 +19,7 @@ contract MoonPieScript is Script {
         MoonPieV2 moonPie = new MoonPieV2(
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            MoonPieV2.NETWORKS.ARBITRUM // this needs to be changed on deployment, depending on the network being deployed to.
+            MoonPieV2.NETWORKS.ASSET_CHAIN // this needs to be changed on deployment, depending on the network being deployed to.
         );
         console.log("MOONPIE", address(moonPie));
 

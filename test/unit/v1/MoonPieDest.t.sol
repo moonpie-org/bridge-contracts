@@ -218,10 +218,8 @@ contract MoonPieDest is MoonPieDestBase {
         assertGt(userRwaBalanceAfter, userRwaBalanceBefore);
     }
 
-    /* 
-  amountIn 1.000000000000000000 USDT
-  amountOut 19.473365128436706527 RWA
-   */
+
+
     function test_bridgeTokenToRWA() public {
         vm.startPrank(USDT_WHALE);
         ERC20(ASSETCHAIN_USDT).transfer(mockBridgeAddress, 10 * 1e18);

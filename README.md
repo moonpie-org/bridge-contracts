@@ -44,5 +44,5 @@ forge script script/MoonPie.s.sol --force --broadcast --rpc-url https://sepolia.
 ```
 ## Verify
 ```shell
-forge verify-contract 0x25a71bc19f47d010018f3fA331B2C428ADA83618 src/v2/MoonPieV2.sol:MoonPieV2 --rpc-url https://enugu-rpc.assetchain.org --verifier blockscout --verifier-url https://scan-testnet.assetchain.org/api --chain-id 42421
+forge verify-contract 0xAF7858FF8ed9B7EB3F1db39C7F6dA3A20426c599 src/v2/MoonPieV2.sol:MoonPieV2 --rpc-url https://enugu-rpc.assetchain.org --verifier blockscout --verifier-url https://scan-testnet.assetchain.org/api --chain-id 42421
 ```

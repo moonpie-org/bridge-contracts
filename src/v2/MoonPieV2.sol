@@ -175,52 +175,22 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
             revert SourceChainNotSupported();
         }
 
-        // After fulfill, bridge might decide to charge fee.
-        // the amount user gets after swap should depend on amount
-        // we got after the fulfill txn, not the intended amount
-        // the relayer started with.
-        uint256 amountReceived;
-        if (token == NATIVE_RWA_TOKEN) {
-            uint256 ethBalanceBefore = address(this).balance;
-            IBridgeAssist(destinationTokenBridge).fulfill(
-                fulfillTx,
-                signatures
-            );
-
-            uint256 ethBalanceAfter = address(this).balance;
-            amountReceived = ethBalanceAfter - ethBalanceBefore;
-        } else {
-            uint256 tokenBalanceBefore = IERC20(token).balanceOf(address(this));
-            IBridgeAssist(destinationTokenBridge).fulfill(
-                fulfillTx,
-                signatures
-            );
-
-            uint256 tokenBalanceAfter = IERC20(token).balanceOf(address(this));
-            amountReceived = tokenBalanceAfter - tokenBalanceBefore;
-        }
-
-        uint256 amountUserRecieved;
-        if (token == NATIVE_RWA_TOKEN) {
-            payable(recipient).transfer(amountReceived);
-            amountUserRecieved = amountReceived;
-        } else {
-            IERC20(token).transfer(recipient, amountReceived);
-            amountUserRecieved = amountReceived;
-        }
+        // we just call the fulfill method on bridge, 
+        // which transfers the token to user directly
+        IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
 
         bridgeTransactions[sourceChainTxnId] = BridgeTransaction(
             Strings.toHexString(uint160(recipient)),
             token,
             destinationTokenBridge,
-            amountUserRecieved,
+            fulfillTx.amount,
             0,
             fulfillTx.fromChain,
             supportedNetwork[CURRENT_CHAIN].network,
             0 // We don't track userIndex for completed bridges since it's handled by the relayer
         );
 
-        emit BridgeCompleted(sourceChainTxnId, recipient, amountUserRecieved);
+        emit BridgeCompleted(sourceChainTxnId, recipient, fulfillTx.amount);
     }
 
     function setFeePercentage(uint256 newFeePercentage) public onlyOwner {
