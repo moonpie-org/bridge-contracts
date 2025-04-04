@@ -35,7 +35,7 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         string toChain;
         uint256 index;
     }
-    uint256 public FEE_PERCENTAGE = 1; // 1% moonpie fee
+    uint256 public FEE_PERCENTAGE = 100; // 100 bps = 1% = 0.01, 500 bps = 5% = 0.05
 
     address public RELAYER_ADDRESS;
     address public TREASURY_ADDRESS;
@@ -209,7 +209,7 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
     }
 
     function calculateMoonPieFee(uint256 amount) public view returns (uint256) {
-        return (amount * FEE_PERCENTAGE) / 100;
+        return (amount * FEE_PERCENTAGE) / 10000; // 10000 = 100%
     }
 
     function stringsMatch(
