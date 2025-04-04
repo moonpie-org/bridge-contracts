@@ -108,16 +108,12 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
 
         // on other chains we're only bridging erc20 tokens
         // we only deal with native tokens on assetchain
-        if (!IERC20(token).transferFrom(msg.sender, address(this), amount)) {
-            revert TransferFromFailed();
-        }
+    SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
 
         uint256 fee = calculateMoonPieFee(amount);
         uint256 amountAfterFee = amount - fee;
 
-        if (!IERC20(token).transfer(TREASURY_ADDRESS, fee)) {
-            revert FeeTransferFailed();
-        }
+    SafeERC20.safeTransfer(IERC20(token), TREASURY_ADDRESS, fee);
 
         bytes32 requestId = keccak256(
             abi.encodePacked(
