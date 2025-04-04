@@ -72,6 +72,7 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
     error SwapFailed();
     error SwapPoolDoesNotExist();
     error OnlyRelayerAllowed();
+    error FeeExceedsMaximum(uint256 providedFee, uint256 maxFee);
 
     constructor(
         address _relayerAddress,
@@ -158,42 +159,44 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         address token,
         address destinationTokenBridge,
         address recipient
-) public onlyRelayer nonReentrant {
-    // === Checks ===
-    if (destinationTokenBridge == address(0)) revert InvalidAddress();
-    if (recipient == address(0)) revert InvalidAddress();
-    if (fulfillTx.amount == 0) revert InvalidZeroAmount();
-    if (token == address(0)) revert InvalidAddress();
+    ) public onlyRelayer nonReentrant {
+        // === Checks ===
+        if (destinationTokenBridge == address(0)) revert InvalidAddress();
+        if (recipient == address(0)) revert InvalidAddress();
+        if (fulfillTx.amount == 0) revert InvalidZeroAmount();
+        if (token == address(0)) revert InvalidAddress();
 
-    if (
-        getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BASE &&
-        getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ARBITRUM
-    ) {
-        revert SourceChainNotSupported();
+        if (
+            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BASE &&
+            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ARBITRUM
+        ) {
+            revert SourceChainNotSupported();
+        }
+
+        // === Effects ===
+        // Update state before external call
+        bridgeTransactions[sourceChainTxnId] = BridgeTransaction(
+            Strings.toHexString(uint160(recipient)),
+            token,
+            destinationTokenBridge,
+            fulfillTx.amount,
+            0,
+            fulfillTx.fromChain,
+            supportedNetwork[CURRENT_CHAIN].network,
+            0
+        );
+
+        emit BridgeCompleted(sourceChainTxnId, recipient, fulfillTx.amount);
+
+        // === Interactions ===
+        // External call last
+        IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
     }
 
-    // === Effects ===
-    // Update state before external call
-    bridgeTransactions[sourceChainTxnId] = BridgeTransaction(
-        Strings.toHexString(uint160(recipient)),
-        token,
-        destinationTokenBridge,
-        fulfillTx.amount,
-        0,
-        fulfillTx.fromChain,
-        supportedNetwork[CURRENT_CHAIN].network,
-        0
-    );
-
-    emit BridgeCompleted(sourceChainTxnId, recipient, fulfillTx.amount);
-
-    // === Interactions ===
-    // External call last
-    IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
-}
-
     function setFeePercentage(uint256 newFeePercentage) public onlyOwner {
-        if (newFeePercentage > 1000) revert("Fee exceeds 10%");
+        if (newFeePercentage > 1000) {
+            revert FeeExceedsMaximum(newFeePercentage, 1000);
+        }
         FEE_PERCENTAGE = newFeePercentage;
         emit FeePercentageUpdated(newFeePercentage);
     }
