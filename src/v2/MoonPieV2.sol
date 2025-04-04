@@ -3,13 +3,11 @@ pragma solidity ^0.8.22;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IBridgeAssist} from "../interfaces/IBridgeAssist.sol";
-import "../interfaces/IWRWA.sol";
 import "forge-std/console.sol";
 
 /// @title MoonPieV2
@@ -37,11 +35,6 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         string toChain;
         uint256 index;
     }
-    IWRWA public WRWA = IWRWA(0x2584D40B5553E81Bb9deC0b6CD1a2E504AAB1709); //  assetchain mainnet
-    ISwapRouter public SWAP_ROUTER =
-        ISwapRouter(0xEC2B2209D710D4283b5d1e29441Df0Dbb9ceE5c3); //  assetchain mainnet
-    address public NATIVE_RWA_TOKEN =
-        0x0000000000000000000000000000000000000001; //  assetchain mainnet
     uint256 public FEE_PERCENTAGE = 1; // 1% moonpie fee
 
     address public RELAYER_ADDRESS;
