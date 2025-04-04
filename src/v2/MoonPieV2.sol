@@ -173,11 +173,6 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         revert SourceChainNotSupported();
     }
 
-    // Additional check: Ensure transaction hasn't been completed
-    if (bridgeTransactions[sourceChainTxnId].amountAfterFee != 0) {
-        revert InvalidRequestId(); // Reusing existing error; consider a custom "AlreadyCompleted" error
-    }
-
     // === Effects ===
     // Update state before external call
     bridgeTransactions[sourceChainTxnId] = BridgeTransaction(
