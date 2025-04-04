@@ -159,36 +159,44 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         address token,
         address destinationTokenBridge,
         address recipient
-    ) public onlyRelayer nonReentrant {
-        if (destinationTokenBridge == address(0)) revert InvalidAddress();
-        if (recipient == address(0)) revert InvalidAddress();
-        if (fulfillTx.amount == 0) revert InvalidZeroAmount();
-        if (token == address(0)) revert InvalidAddress();
+) public onlyRelayer nonReentrant {
+    // === Checks ===
+    if (destinationTokenBridge == address(0)) revert InvalidAddress();
+    if (recipient == address(0)) revert InvalidAddress();
+    if (fulfillTx.amount == 0) revert InvalidZeroAmount();
+    if (token == address(0)) revert InvalidAddress();
 
-        if (
-            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BASE &&
-            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ARBITRUM
-        ) {
-            revert SourceChainNotSupported();
-        }
-
-        // we just call the fulfill method on bridge,
-        // which transfers the token to user directly
-        IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
-
-        bridgeTransactions[sourceChainTxnId] = BridgeTransaction(
-            Strings.toHexString(uint160(recipient)),
-            token,
-            destinationTokenBridge,
-            fulfillTx.amount,
-            0,
-            fulfillTx.fromChain,
-            supportedNetwork[CURRENT_CHAIN].network,
-            0 // We don't track userIndex for completed bridges since it's handled by the relayer
-        );
-
-        emit BridgeCompleted(sourceChainTxnId, recipient, fulfillTx.amount);
+    if (
+        getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BASE &&
+        getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ARBITRUM
+    ) {
+        revert SourceChainNotSupported();
     }
+
+    // Additional check: Ensure transaction hasn't been completed
+    if (bridgeTransactions[sourceChainTxnId].amountAfterFee != 0) {
+        revert InvalidRequestId(); // Reusing existing error; consider a custom "AlreadyCompleted" error
+    }
+
+    // === Effects ===
+    // Update state before external call
+    bridgeTransactions[sourceChainTxnId] = BridgeTransaction(
+        Strings.toHexString(uint160(recipient)),
+        token,
+        destinationTokenBridge,
+        fulfillTx.amount,
+        0,
+        fulfillTx.fromChain,
+        supportedNetwork[CURRENT_CHAIN].network,
+        0
+    );
+
+    emit BridgeCompleted(sourceChainTxnId, recipient, fulfillTx.amount);
+
+    // === Interactions ===
+    // External call last
+    IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
+}
 
     function setFeePercentage(uint256 newFeePercentage) public onlyOwner {
         if (newFeePercentage > 1000) revert("Fee exceeds 10%");
