@@ -55,6 +55,10 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         address indexed recipient,
         uint256 amount
     );
+    event FeePercentageUpdated(uint256 newFee);
+    event RelayerUpdated(address newRelayer);
+    event TreasuryUpdated(address newTreasury);
+    event NetworkSupported(NETWORKS network, string networkId);
 
     // errors
     error InvalidRecipient();
@@ -168,7 +172,7 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
             revert SourceChainNotSupported();
         }
 
-        // we just call the fulfill method on bridge, 
+        // we just call the fulfill method on bridge,
         // which transfers the token to user directly
         IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
 
@@ -187,16 +191,19 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
     }
 
     function setFeePercentage(uint256 newFeePercentage) public onlyOwner {
-    if (newFeePercentage > 1000) revert("Fee exceeds 10%");
+        if (newFeePercentage > 1000) revert("Fee exceeds 10%");
         FEE_PERCENTAGE = newFeePercentage;
+        emit FeePercentageUpdated(newFeePercentage);
     }
 
     function setRelayerAddress(address _relayerAddress) public onlyOwner {
         RELAYER_ADDRESS = _relayerAddress;
+        emit RelayerUpdated(_relayerAddress);
     }
 
     function setTreasuryAddress(address _treasuryAddress) public onlyOwner {
         TREASURY_ADDRESS = _treasuryAddress;
+        emit TreasuryUpdated(_treasuryAddress);
     }
 
     function setSupportedNetwork(
@@ -207,6 +214,7 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
             isExists: true,
             network: networkId
         });
+        emit NetworkSupported(network, networkId);
     }
 
     function calculateMoonPieFee(uint256 amount) public view returns (uint256) {
