@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IBridgeAssist} from "../interfaces/IBridgeAssist.sol";
-import "forge-std/console.sol";
 
 /// @title MoonPieV2
 /// @author Ebube Okorie - @kelviniot
