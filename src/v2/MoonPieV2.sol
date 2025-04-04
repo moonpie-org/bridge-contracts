@@ -187,6 +187,7 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
     }
 
     function setFeePercentage(uint256 newFeePercentage) public onlyOwner {
+    if (newFeePercentage > 1000) revert("Fee exceeds 10%");
         FEE_PERCENTAGE = newFeePercentage;
     }
 
