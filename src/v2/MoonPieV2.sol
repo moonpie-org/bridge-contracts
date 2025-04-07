@@ -34,7 +34,7 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         string toChain;
         uint256 index;
     }
-    uint256 public FEE_PERCENTAGE = 100; // 100 bps = 1% = 0.01, 500 bps = 5% = 0.05
+    uint256 public DEFAULT_FEE_PERCENTAGE = 100; // 100 bps = 1% = 0.01, 500 bps = 5% = 0.05
 
     address public RELAYER_ADDRESS;
     address public TREASURY_ADDRESS;
@@ -42,6 +42,8 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
 
     mapping(NETWORKS => NetworkInfo) public supportedNetwork;
     mapping(bytes32 => BridgeTransaction) public bridgeTransactions;
+    mapping(address => uint256) public tokenFeeCaps; // Token address -> max fee in token units
+    mapping(address => bool) public isTokenRegistered;
 
     // events
     event BridgeInitiated(
@@ -58,6 +60,8 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
     event RelayerUpdated(address newRelayer);
     event TreasuryUpdated(address newTreasury);
     event NetworkSupported(NETWORKS network, string networkId);
+    event TokenRegistered(address indexed token, uint256 feeCap);
+    event DefaultFeePercentageUpdated(uint256 newFee);
 
     // errors
     error InvalidRecipient();
@@ -73,6 +77,7 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
     error SwapPoolDoesNotExist();
     error OnlyRelayerAllowed();
     error FeeExceedsMaximum(uint256 providedFee, uint256 maxFee);
+    error AmountBelowFeeCap();
 
     constructor(
         address _relayerAddress,
@@ -103,17 +108,31 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
             revert InvalidZeroAmount();
         }
 
+        // Check if the token is registered and amount exceeds max cap
+        if (isTokenRegistered[token]) {
+            uint256 maxCap = tokenFeeCaps[token];
+
+            if (amount <= maxCap) {
+                revert AmountBelowFeeCap();
+            }
+        }
+
         uint256 currentUserIndex = IBridgeAssist(tokenBridge)
             .getUserTransactionsAmount(address(this));
 
         // on other chains we're only bridging erc20 tokens
         // we only deal with native tokens on assetchain
-    SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
+        SafeERC20.safeTransferFrom(
+            IERC20(token),
+            msg.sender,
+            address(this),
+            amount
+        );
 
-        uint256 fee = calculateMoonPieFee(amount);
+        uint256 fee = calculateMoonPieFee(token, amount);
         uint256 amountAfterFee = amount - fee;
 
-    SafeERC20.safeTransfer(IERC20(token), TREASURY_ADDRESS, fee);
+        SafeERC20.safeTransfer(IERC20(token), TREASURY_ADDRESS, fee);
 
         bytes32 requestId = keccak256(
             abi.encodePacked(
@@ -189,11 +208,24 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
     }
 
-    function setFeePercentage(uint256 newFeePercentage) public onlyOwner {
+    /// @dev Register a token with a specific fee cap
+    function registerToken(address token, uint256 feeCap) public onlyOwner {
+        if (token == address(0)) revert InvalidAddress();
+        if (feeCap == 0) revert InvalidZeroAmount();
+
+        isTokenRegistered[token] = true;
+        tokenFeeCaps[token] = feeCap;
+        emit TokenRegistered(token, feeCap);
+    }
+
+    /// @dev Update the default fee percentage (for unregistered tokens)
+    function setDefaultFeePercentage(
+        uint256 newFeePercentage
+    ) public onlyOwner {
         if (newFeePercentage > 1000) {
             revert FeeExceedsMaximum(newFeePercentage, 1000);
         }
-        FEE_PERCENTAGE = newFeePercentage;
+        DEFAULT_FEE_PERCENTAGE = newFeePercentage;
         emit FeePercentageUpdated(newFeePercentage);
     }
 
@@ -218,8 +250,22 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         emit NetworkSupported(network, networkId);
     }
 
-    function calculateMoonPieFee(uint256 amount) public view returns (uint256) {
-        return (amount * FEE_PERCENTAGE) / 10000; // 10000 = 100%
+    /// @dev Calculate the fee based on token registration status
+    function calculateMoonPieFee(
+        address token,
+        uint256 amount
+    ) public view returns (uint256) {
+        if (amount == 0) return 0;
+
+        uint256 fee;
+        if (isTokenRegistered[token]) {
+            fee = (amount * DEFAULT_FEE_PERCENTAGE) / 10000; // 1% default
+            uint256 cap = tokenFeeCaps[token];
+            return (fee > cap) ? cap : fee;
+        } else {
+            fee = (amount * DEFAULT_FEE_PERCENTAGE) / 10000;
+            return fee;
+        }
     }
 
     function stringsMatch(

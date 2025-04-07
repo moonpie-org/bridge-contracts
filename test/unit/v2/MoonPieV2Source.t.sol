@@ -71,10 +71,114 @@ contract MoonPieV2Source is MoonPieSourceBase {
 
         // ensure bridge received funds
         uint256 afterBalance = usdc.balanceOf(mockBridgeAddress);
-        assertEq(afterBalance - beforeBalance, 99 * 1e5);   //  9.9
+        assertEq(afterBalance - beforeBalance, 99 * 1e5); //  9.9
 
         // ensure moonpie treasury got expected fee
         uint256 treasuryBalanceAfter = usdc.balanceOf(TREASURY_ADDRESS);
         assertEq(treasuryBalanceAfter - treasuryBalanceBefore, 0.1 * 1e6); // 0.1
+    }
+
+    // @dev if amount is too large, we should exforce cap
+    function test_registerTokenAndCheckFeeTheExceedsCap() public {
+        MoonPieV2 moonPie = new MoonPieV2(
+            RELAYER_ADDRESS,
+            TREASURY_ADDRESS,
+            MoonPieV2.NETWORKS.BASE
+        );
+
+        // Register a token with a fee cap
+        moonPie.registerToken(mockTokenAddress, 5 * 1e6); // 5 tokens as fee cap
+
+        // Set up the bridge
+        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BASE, "evm.8453");
+        moonPie.setSupportedNetwork(
+            MoonPieV2.NETWORKS.ASSET_CHAIN,
+            "evm.42420"
+        );
+
+        uint256 amount = 1000 * 1e6; // 1000 tokens
+        // Approve the token for the bridge
+        usdc.approve(address(moonPie), amount);
+
+        // Bridge with an amount more than cap
+        uint256 expectedFee = 5000000; // 5 token as fee
+
+        // Test bridging
+        moonPie.bridge(
+            mockTokenAddress,
+            mockBridgeAddress,
+            amount,
+            string.concat("0x", Strings.toHexString(uint160(address(1))))
+        );
+        uint256 treasuryBalanceAfter = usdc.balanceOf(TREASURY_ADDRESS);
+
+        assertEq(treasuryBalanceAfter, expectedFee);
+    }
+
+    // @dev amount being bridge is lower than the max fee cap
+    function test_RevertIfAmountIsBelowFeeCap() public {
+        MoonPieV2 moonPie = new MoonPieV2(
+            RELAYER_ADDRESS,
+            TREASURY_ADDRESS,
+            MoonPieV2.NETWORKS.BASE
+        );
+
+        // Register a token with a fee cap
+        moonPie.registerToken(mockTokenAddress, 5 * 1e6); // 5 tokens as fee cap
+
+        // Set up the bridge
+        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BASE, "evm.8453");
+        moonPie.setSupportedNetwork(
+            MoonPieV2.NETWORKS.ASSET_CHAIN,
+            "evm.42420"
+        );
+
+        // Approve the token for the bridge
+        usdc.approve(address(moonPie), usdc.balanceOf(userAddress));
+
+        // Bridge with an amount below the fee cap
+        uint256 amount = 4 * 1e6; // 4 tokens, below the fee cap of 5 tokens
+        vm.expectRevert(MoonPieV2.AmountBelowFeeCap.selector);
+        moonPie.bridge(
+            mockTokenAddress,
+            mockBridgeAddress,
+            amount,
+            string.concat("0x", Strings.toHexString(uint160(address(1))))
+        );
+    }
+
+    // @dev simulate bridging tokens with large values like btc
+    function test_shouldChargeFeeCap() public {
+        MoonPieV2 moonPie = new MoonPieV2(
+            RELAYER_ADDRESS,
+            TREASURY_ADDRESS,
+            MoonPieV2.NETWORKS.BASE
+        );
+
+        // Register a token with a fee cap
+        moonPie.registerToken(mockTokenAddress, 0.001 * 1e6); // 0.001 BTC as fee cap
+
+        // Set up the bridge
+        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BASE, "evm.8453");
+        moonPie.setSupportedNetwork(
+            MoonPieV2.NETWORKS.ASSET_CHAIN,
+            "evm.42420"
+        );
+
+        uint256 expectedFee = 0.001 * 1e6; // 0.001 BTC as fee
+
+        // Approve the token for the bridge
+        usdc.approve(address(moonPie), usdc.balanceOf(userAddress));
+
+        uint256 amount = 1 * 1e6; // 1
+        moonPie.bridge(
+            mockTokenAddress,
+            mockBridgeAddress,
+            amount,
+            string.concat("0x", Strings.toHexString(uint160(address(1))))
+        );
+
+        uint256 treasuryBalanceAfter = usdc.balanceOf(TREASURY_ADDRESS);
+        assertEq(treasuryBalanceAfter, expectedFee);
     }
 }
