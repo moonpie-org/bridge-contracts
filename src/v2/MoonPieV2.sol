@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IBridgeAssist} from "../interfaces/IBridgeAssist.sol";
-import "forge-std/console.sol";
 
 /// @title MoonPieV2
 /// @author Ebube Okorie - @kelviniot
@@ -73,6 +72,7 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
     error SwapFailed();
     error SwapPoolDoesNotExist();
     error OnlyRelayerAllowed();
+    error FeeExceedsMaximum(uint256 providedFee, uint256 maxFee);
 
     constructor(
         address _relayerAddress,
@@ -108,16 +108,12 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
 
         // on other chains we're only bridging erc20 tokens
         // we only deal with native tokens on assetchain
-        if (!IERC20(token).transferFrom(msg.sender, address(this), amount)) {
-            revert TransferFromFailed();
-        }
+    SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
 
         uint256 fee = calculateMoonPieFee(amount);
         uint256 amountAfterFee = amount - fee;
 
-        if (!IERC20(token).transfer(TREASURY_ADDRESS, fee)) {
-            revert FeeTransferFailed();
-        }
+    SafeERC20.safeTransfer(IERC20(token), TREASURY_ADDRESS, fee);
 
         bytes32 requestId = keccak256(
             abi.encodePacked(
@@ -159,42 +155,44 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         address token,
         address destinationTokenBridge,
         address recipient
-) public onlyRelayer nonReentrant {
-    // === Checks ===
-    if (destinationTokenBridge == address(0)) revert InvalidAddress();
-    if (recipient == address(0)) revert InvalidAddress();
-    if (fulfillTx.amount == 0) revert InvalidZeroAmount();
-    if (token == address(0)) revert InvalidAddress();
+    ) public onlyRelayer nonReentrant {
+        // === Checks ===
+        if (destinationTokenBridge == address(0)) revert InvalidAddress();
+        if (recipient == address(0)) revert InvalidAddress();
+        if (fulfillTx.amount == 0) revert InvalidZeroAmount();
+        if (token == address(0)) revert InvalidAddress();
 
-    if (
-        getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BASE &&
-        getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ARBITRUM
-    ) {
-        revert SourceChainNotSupported();
+        if (
+            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BASE &&
+            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ARBITRUM
+        ) {
+            revert SourceChainNotSupported();
+        }
+
+        // === Effects ===
+        // Update state before external call
+        bridgeTransactions[sourceChainTxnId] = BridgeTransaction(
+            Strings.toHexString(uint160(recipient)),
+            token,
+            destinationTokenBridge,
+            fulfillTx.amount,
+            0,
+            fulfillTx.fromChain,
+            supportedNetwork[CURRENT_CHAIN].network,
+            0
+        );
+
+        emit BridgeCompleted(sourceChainTxnId, recipient, fulfillTx.amount);
+
+        // === Interactions ===
+        // External call last
+        IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
     }
 
-    // === Effects ===
-    // Update state before external call
-    bridgeTransactions[sourceChainTxnId] = BridgeTransaction(
-        Strings.toHexString(uint160(recipient)),
-        token,
-        destinationTokenBridge,
-        fulfillTx.amount,
-        0,
-        fulfillTx.fromChain,
-        supportedNetwork[CURRENT_CHAIN].network,
-        0
-    );
-
-    emit BridgeCompleted(sourceChainTxnId, recipient, fulfillTx.amount);
-
-    // === Interactions ===
-    // External call last
-    IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
-}
-
     function setFeePercentage(uint256 newFeePercentage) public onlyOwner {
-        if (newFeePercentage > 1000) revert("Fee exceeds 10%");
+        if (newFeePercentage > 1000) {
+            revert FeeExceedsMaximum(newFeePercentage, 1000);
+        }
         FEE_PERCENTAGE = newFeePercentage;
         emit FeePercentageUpdated(newFeePercentage);
     }
