@@ -24,10 +24,10 @@ https://book.getfoundry.sh/
 forge test --match-path test/unit/v1/MoonPieSource.t.sol -vv --fork-url https://mainnet-rpc.assetchain.org
 ```
 ```shell
-forge test --match-path test/unit/v1/MoonPieSource.t.sol -vv --fork-url https://mainnet-rpc.assetchain.org
+forge test --match-path test/unit/v1/MoonPieDest.t.sol -vv --fork-url https://mainnet-rpc.assetchain.org
 ```
 ```shell
-forge test --match-path test/unit/v1/MoonPieDest.t.sol -vv --fork-url https://mainnet-rpc.assetchain.org
+forge test --match-path test/unit/v2/MoonPieV2Source.t.sol -vv --fork-url https://mainnet-rpc.assetchain.org
 ```
 ```shell
 forge test --match-path test/unit/v2/MoonPieV2Dest.t.sol -vv --fork-url https://mainnet-rpc.assetchain.org

@@ -3,13 +3,11 @@ pragma solidity ^0.8.22;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IBridgeAssist} from "../interfaces/IBridgeAssist.sol";
-import "../interfaces/IWRWA.sol";
 import "forge-std/console.sol";
 
 /// @title MoonPieV2
@@ -37,12 +35,7 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         string toChain;
         uint256 index;
     }
-    IWRWA public WRWA = IWRWA(0x2584D40B5553E81Bb9deC0b6CD1a2E504AAB1709); //  assetchain mainnet
-    ISwapRouter public SWAP_ROUTER =
-        ISwapRouter(0xEC2B2209D710D4283b5d1e29441Df0Dbb9ceE5c3); //  assetchain mainnet
-    address public NATIVE_RWA_TOKEN =
-        0x0000000000000000000000000000000000000001; //  assetchain mainnet
-    uint256 public FEE_PERCENTAGE = 1; // 1% moonpie fee
+    uint256 public FEE_PERCENTAGE = 100; // 100 bps = 1% = 0.01, 500 bps = 5% = 0.05
 
     address public RELAYER_ADDRESS;
     address public TREASURY_ADDRESS;
@@ -62,6 +55,10 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         address indexed recipient,
         uint256 amount
     );
+    event FeePercentageUpdated(uint256 newFee);
+    event RelayerUpdated(address newRelayer);
+    event TreasuryUpdated(address newTreasury);
+    event NetworkSupported(NETWORKS network, string networkId);
 
     // errors
     error InvalidRecipient();
@@ -162,47 +159,54 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
         address token,
         address destinationTokenBridge,
         address recipient
-    ) public onlyRelayer nonReentrant {
-        if (destinationTokenBridge == address(0)) revert InvalidAddress();
-        if (recipient == address(0)) revert InvalidAddress();
-        if (fulfillTx.amount == 0) revert InvalidZeroAmount();
-        if (token == address(0)) revert InvalidAddress();
+) public onlyRelayer nonReentrant {
+    // === Checks ===
+    if (destinationTokenBridge == address(0)) revert InvalidAddress();
+    if (recipient == address(0)) revert InvalidAddress();
+    if (fulfillTx.amount == 0) revert InvalidZeroAmount();
+    if (token == address(0)) revert InvalidAddress();
 
-        if (
-            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BASE &&
-            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ARBITRUM
-        ) {
-            revert SourceChainNotSupported();
-        }
-
-        // we just call the fulfill method on bridge, 
-        // which transfers the token to user directly
-        IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
-
-        bridgeTransactions[sourceChainTxnId] = BridgeTransaction(
-            Strings.toHexString(uint160(recipient)),
-            token,
-            destinationTokenBridge,
-            fulfillTx.amount,
-            0,
-            fulfillTx.fromChain,
-            supportedNetwork[CURRENT_CHAIN].network,
-            0 // We don't track userIndex for completed bridges since it's handled by the relayer
-        );
-
-        emit BridgeCompleted(sourceChainTxnId, recipient, fulfillTx.amount);
+    if (
+        getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BASE &&
+        getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ARBITRUM
+    ) {
+        revert SourceChainNotSupported();
     }
 
+    // === Effects ===
+    // Update state before external call
+    bridgeTransactions[sourceChainTxnId] = BridgeTransaction(
+        Strings.toHexString(uint160(recipient)),
+        token,
+        destinationTokenBridge,
+        fulfillTx.amount,
+        0,
+        fulfillTx.fromChain,
+        supportedNetwork[CURRENT_CHAIN].network,
+        0
+    );
+
+    emit BridgeCompleted(sourceChainTxnId, recipient, fulfillTx.amount);
+
+    // === Interactions ===
+    // External call last
+    IBridgeAssist(destinationTokenBridge).fulfill(fulfillTx, signatures);
+}
+
     function setFeePercentage(uint256 newFeePercentage) public onlyOwner {
+        if (newFeePercentage > 1000) revert("Fee exceeds 10%");
         FEE_PERCENTAGE = newFeePercentage;
+        emit FeePercentageUpdated(newFeePercentage);
     }
 
     function setRelayerAddress(address _relayerAddress) public onlyOwner {
         RELAYER_ADDRESS = _relayerAddress;
+        emit RelayerUpdated(_relayerAddress);
     }
 
     function setTreasuryAddress(address _treasuryAddress) public onlyOwner {
         TREASURY_ADDRESS = _treasuryAddress;
+        emit TreasuryUpdated(_treasuryAddress);
     }
 
     function setSupportedNetwork(
@@ -213,10 +217,11 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
             isExists: true,
             network: networkId
         });
+        emit NetworkSupported(network, networkId);
     }
 
     function calculateMoonPieFee(uint256 amount) public view returns (uint256) {
-        return (amount * FEE_PERCENTAGE) / 100;
+        return (amount * FEE_PERCENTAGE) / 10000; // 10000 = 100%
     }
 
     function stringsMatch(
