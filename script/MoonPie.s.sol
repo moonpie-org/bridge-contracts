@@ -23,7 +23,7 @@ contract MoonPieScript is Script {
         );
         console.log("MOONPIE", address(moonPie));
 
-        moonPie.setFeePercentage(2); // Set the fee percentage to 2%
+        moonPie.setDefaultFeePercentage(2); // Set the fee percentage to 2%
 
         moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.ASSET_CHAIN, "evm.42421");
         moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BASE, "evm.84532");
