@@ -12,8 +12,8 @@ import {BridgeAssistNativeUpgradeable} from "../mocks/BridgeAssistNativeUpgradea
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MoonPieV2} from "src/v2/MoonPieV2.sol";
-
-import "forge-std/console2.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract MoonPieDestBase is Test, BaseScript {
     using stdJson for string;
@@ -45,6 +45,10 @@ contract MoonPieDestBase is Test, BaseScript {
     address constant USDT_WHALE = 0xfb1B5ABC46aB3A191c800056514098D9e720F5A8; // assetchain
     address constant RWA_WHALE = 0x5195aD65E40C79E11661486B39978ff268f3B342; // assetchain
 
+    // Proxy-related state
+    MoonPieV2 public moonPie; // Proxy instance
+    address public proxyAdmin;
+
     function setUp() public {
         assetChainFork = vm.createFork(ASSETCHAIN_RPC_URL);
         deployConfigJson = getDeployConfigJson();
@@ -56,6 +60,26 @@ contract MoonPieDestBase is Test, BaseScript {
             ".swapRouterAddress"
         );
         NATIVE_RWA = deployConfigJson.readAddress(".nativeRwaTokenAddress");
+
+        // Deploy MoonPieV2 as a proxy
+        vm.startPrank(msg.sender);
+        MoonPieV2 moonPieImpl = new MoonPieV2();
+        ProxyAdmin admin = new ProxyAdmin(msg.sender);
+        bytes memory initData = abi.encodeWithSelector(
+            MoonPieV2.initialize.selector,
+            RELAYER_ADDRESS,
+            TREASURY_ADDRESS,
+            MoonPieV2.NETWORKS.ASSET_CHAIN
+        );
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+            address(moonPieImpl),
+            address(admin),
+            initData
+        );
+        moonPie = MoonPieV2(payable(address(proxy))); // Cast proxy to MoonPieV2
+        proxyAdmin = address(admin);
+        addSupportedNetworks(moonPie);
+
         deployBridgeAssistMock();
         deployNativeBridge();
     }
@@ -157,10 +181,13 @@ contract MoonPieDestBase is Test, BaseScript {
         vm.stopPrank();
     }
 
-    function addSupportedNetworks(MoonPieV2 moonPie) public {
-        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.ASSET_CHAIN,"evm.42420");
-        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BASE, "evm.8453");
-        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.ARBITRUM, "evm.42161");
+    function addSupportedNetworks(MoonPieV2 _moonPie) public {
+        _moonPie.setSupportedNetwork(
+            MoonPieV2.NETWORKS.ASSET_CHAIN,
+            "evm.42420"
+        );
+        _moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BASE, "evm.8453");
+        _moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.ARBITRUM, "evm.42161");
     }
 
     function _signTransaction(

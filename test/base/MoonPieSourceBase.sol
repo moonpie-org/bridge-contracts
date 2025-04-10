@@ -9,7 +9,10 @@ import {BaseScript, stdJson, console2} from "script/base.s.sol";
 import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {BridgeAssistTransferUpgradeable} from "../mocks/BridgeAssistTransferUpgradeable.sol";
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MoonPieV2} from "src/v2/MoonPieV2.sol";
 import "forge-std/console2.sol";
 
 contract MoonPieSourceBase is Test, BaseScript {
@@ -35,19 +38,42 @@ contract MoonPieSourceBase is Test, BaseScript {
         0x2B7C1342Cc64add10B2a79C8f9767d2667DE64B2;
     address constant USDC_WHALE = 0x6d297BF599845101A84387C6D5962cC21495d5A2; // assetchain
 
+    // Proxy-related state
+    MoonPieV2 public moonPie; // Proxy instance
+    address public proxyAdmin;
+
     function setUp() public {
         // First load environment variables
         RELAYER_ADDRESS = vm.envAddress("RELAYER_ADDRESS");
         TREASURY_ADDRESS = vm.envAddress("TREASURY_ADDRESS");
         ASSETCHAIN_RPC_URL = vm.envString("ASSETCHAIN_RPC_URL");
         ownerPrivateKey = vm.envUint("OWNER_PRV_KEY");
-        
+
         // Then create the fork
         assetChainFork = vm.createFork(ASSETCHAIN_RPC_URL);
-        
+
         // Then load the JSON config
         deployConfigJson = getDeployConfigJson();
-        
+
+        // Deploy MoonPieV2 as a proxy
+        vm.startPrank(msg.sender); // Use treasury as deployer for consistency
+        MoonPieV2 moonPieImpl = new MoonPieV2();
+        ProxyAdmin admin = new ProxyAdmin(msg.sender);
+        bytes memory initData = abi.encodeWithSelector(
+            MoonPieV2.initialize.selector,
+            RELAYER_ADDRESS,
+            TREASURY_ADDRESS,
+            MoonPieV2.NETWORKS.ASSET_CHAIN
+        );
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+            address(moonPieImpl),
+            address(admin),
+            initData
+        );
+        moonPie = MoonPieV2(payable(address(proxy))); // Cast proxy to MoonPieV2
+        proxyAdmin = address(admin);
+        addSupportedNetworks(moonPie);
+
         // Finally deploy the mocks
         deployUsdcMock();
         deployBridgeAssistMock();
@@ -105,6 +131,15 @@ contract MoonPieSourceBase is Test, BaseScript {
             exchangeRatesFromPow
         );
         vm.stopPrank();
+    }
+
+    function addSupportedNetworks(MoonPieV2 _moonPie) public {
+        _moonPie.setSupportedNetwork(
+            MoonPieV2.NETWORKS.ASSET_CHAIN,
+            "evm.42420"
+        );
+        _moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BASE, "evm.8453");
+        _moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.ARBITRUM, "evm.42161");
     }
 
     function _signTransaction(
