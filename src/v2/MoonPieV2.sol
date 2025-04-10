@@ -2,17 +2,24 @@
 pragma solidity ^0.8.22;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IBridgeAssist} from "../interfaces/IBridgeAssist.sol";
+import "forge-std/console.sol";
+
+
 
 /// @title MoonPieV2
 /// @author Ebube Okorie - @kelviniot
 /// @dev MoonPie v2 bridges tokens to token, no swapping to RWA.
-contract MoonPieV2 is Ownable, ReentrancyGuard {
+contract MoonPieV2 is
+    Initializable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     enum NETWORKS {
         ASSET_CHAIN,
         ARBITRUM,
@@ -79,14 +86,18 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
     error FeeExceedsMaximum(uint256 providedFee, uint256 maxFee);
     error AmountBelowFeeCap();
 
-    constructor(
+    /// @dev Initialize function replaces constructor
+    function initialize(
         address _relayerAddress,
         address _treasuryAddress,
         NETWORKS _currentChain
-    ) Ownable(msg.sender) {
+    ) public initializer {
+        __Ownable_init(msg.sender);
+        __ReentrancyGuard_init();
         RELAYER_ADDRESS = _relayerAddress;
         TREASURY_ADDRESS = _treasuryAddress;
         CURRENT_CHAIN = _currentChain;
+        DEFAULT_FEE_PERCENTAGE = 100; // 1%
     }
 
     modifier onlyRelayer() {
@@ -297,4 +308,7 @@ contract MoonPieV2 is Ownable, ReentrancyGuard {
     }
 
     receive() external payable {}
+
+    /// @dev Reserve storage slots for future upgrades
+    uint256[50] private __gap;
 }
