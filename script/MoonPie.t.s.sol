@@ -29,8 +29,32 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
   Default Fee Percentage: 100
   Treasury Address: 0x377123Ed74fBE8ddb47E30aEbCf267c55EFa7b33
 
+
+// ethereum
+  MoonPieV2 Implementation deployed at: 0x3a2173cA12a440457561f4145689e6A008c1855b
+  ProxyAdmin deployed at: 0x39838993939f6ea7fA7FF8EF1e0cD1505A2Ed824
+  MoonPieV2 Proxy deployed at: 0xf620D476038c2cA0cFD59C9bb91709d152B255F1
+  Default Fee Percentage: 100
+  Treasury Address: 0x377123Ed74fBE8ddb47E30aEbCf267c55EFa7b33
+
+
+// bsc
+  MoonPieV2 Implementation deployed at: 0xfD3760a20e8fc3eD528c9069B5bDB5cd13bAc223
+  ProxyAdmin deployed at: 0x94aAeD820dBc27BA06386f9FEc4510bD04a8c59d
+  MoonPieV2 Proxy deployed at: 0x8593BeFfC6C57b55b7aA9810F5B2e675b32a925d
+  Default Fee Percentage: 100
+  Treasury Address: 0x377123Ed74fBE8ddb47E30aEbCf267c55EFa7b33
+
+// bitlayer
+  MoonPieV2 Implementation deployed at: 0x1bf29Ba4D77657A7c4Ac8BD0AC1BCb5e65d3A08A
+  ProxyAdmin deployed at: 0xCec4d365b88F6441E1ce95a114aFF0028999C02b
+  MoonPieV2 Proxy deployed at: 0xfD3760a20e8fc3eD528c9069B5bDB5cd13bAc223
+  Default Fee Percentage: 100
+  Treasury Address: 0x377123Ed74fBE8ddb47E30aEbCf267c55EFa7b33
+
  */
 
+/// @title MoonPie testnet deployment script
 contract MoonPieScript is Script {
     uint256 ownerPrivateKey = vm.envUint("OWNER_PRV_KEY");
 
@@ -44,7 +68,7 @@ contract MoonPieScript is Script {
     function run() public {
         vm.startBroadcast(ownerPrivateKey);
 
-        console.log('msg.sender');
+        console.log("msg.sender");
         console.log(msg.sender);
 
         // Step 1: Deploy the implementation contract
@@ -63,7 +87,7 @@ contract MoonPieScript is Script {
             MoonPieV2.initialize.selector,
             RELAYER_ADDRESS,
             TREASURY_ADDRESS,
-            MoonPieV2.NETWORKS.ASSET_CHAIN // Adjust based on deployment network
+            MoonPieV2.NETWORKS.BITLAYER // Adjust based on deployment network
         );
 
         // Step 4: Deploy the TransparentUpgradeableProxy
@@ -86,6 +110,13 @@ contract MoonPieScript is Script {
         );
         moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BASE, "evm.84532");
         moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.ARBITRUM, "evm.421614");
+
+        moonPie.setSupportedNetwork(
+            MoonPieV2.NETWORKS.ETHEREUM,
+            "evm.11155111"
+        );
+        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BITLAYER, "evm.200810");
+        moonPie.setSupportedNetwork(MoonPieV2.NETWORKS.BSC, "evm.97");
 
         // Verify some settings
         console.log(

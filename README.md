@@ -32,13 +32,22 @@ forge test --match-path test/unit/v2/MoonPieV2Source.t.sol -vv --fork-url https:
 
 ## Deployment
 ```shell
-forge script script/MoonPie.s.sol --force --broadcast --rpc-url https://enugu-rpc.assetchain.org
+forge script script/MoonPie.t.s.sol --force --broadcast --rpc-url https://enugu-rpc.assetchain.org
 ```
 ```shell
-forge script script/MoonPie.s.sol --force --broadcast --rpc-url https://arbitrum-sepolia.gateway.tenderly.co
+forge script script/MoonPie.t.s.sol --force --broadcast --rpc-url https://arbitrum-sepolia.gateway.tenderly.co
 ```
 ```shell
-forge script script/MoonPie.s.sol --force --broadcast --rpc-url https://sepolia.base.org
+forge script script/MoonPie.t.s.sol --force --broadcast --rpc-url https://sepolia.base.org
+```
+```shell
+forge script script/MoonPie.t.s.sol --force --broadcast --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+```
+```shell
+forge script script/MoonPie.t.s.sol --force --broadcast --rpc-url https://testnet-rpc.bitlayer.org --legacy
+```
+```shell
+forge script script/MoonPie.t.s.sol --force --broadcast --rpc-url https://bsc-testnet-rpc.publicnode.com
 ```
 ## Verify
 ```shell

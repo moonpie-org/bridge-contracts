@@ -22,7 +22,10 @@ contract MoonPieV2 is
 {
     enum NETWORKS {
         ASSET_CHAIN,
+        ETHEREUM,
         ARBITRUM,
+        BITLAYER,
+        BSC,
         BASE
     }
 
@@ -194,7 +197,10 @@ contract MoonPieV2 is
 
         if (
             getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BASE &&
-            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ARBITRUM
+            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ARBITRUM &&
+            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BITLAYER &&
+            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.BSC &&
+            getNetworkFromChainId(fulfillTx.fromChain) != NETWORKS.ETHEREUM
         ) {
             revert SourceChainNotSupported();
         }
@@ -291,17 +297,16 @@ contract MoonPieV2 is
     ) public view returns (NETWORKS) {
         if (stringsMatch(chainId, supportedNetwork[NETWORKS.BASE].network)) {
             return NETWORKS.BASE;
-        } else if (
-            stringsMatch(chainId, supportedNetwork[NETWORKS.ARBITRUM].network)
-        ) {
+        } else if (stringsMatch(chainId, supportedNetwork[NETWORKS.ARBITRUM].network)) {
             return NETWORKS.ARBITRUM;
-        } else if (
-            stringsMatch(
-                chainId,
-                supportedNetwork[NETWORKS.ASSET_CHAIN].network
-            )
-        ) {
+        } else if (stringsMatch(chainId, supportedNetwork[NETWORKS.ASSET_CHAIN].network)) {
             return NETWORKS.ASSET_CHAIN;
+        } else if (stringsMatch(chainId, supportedNetwork[NETWORKS.ETHEREUM].network)) {
+            return NETWORKS.ETHEREUM;
+        } else if (stringsMatch(chainId, supportedNetwork[NETWORKS.BITLAYER].network)) {
+            return NETWORKS.BITLAYER;
+        } else if (stringsMatch(chainId, supportedNetwork[NETWORKS.BSC].network)) {
+            return NETWORKS.BSC;
         } else {
             revert SourceChainNotSupported();
         }
