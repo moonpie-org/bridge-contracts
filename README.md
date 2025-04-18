@@ -1,24 +1,46 @@
-## MoonPie Bridge Contract
+# MoonPie Bridge Contract
 
+## Overview
+MoonPieV2 is an upgradable, secure Solidity smart contract designed to facilitate cross-chain token bridging in a trustless and efficient manner. It interacts with a core bridging contract (IBridgeAssist) to handle the actual token transfer across chains
+
+<img src="./PRD.png" alt="MoonPie System Architecture" width="700">
+
+
+
+## Key Features  
+**Cross-Chain Bridging:** Enables token transfers between supported networks, including Ethereum, Arbitrum, BSC, Base, Bitlayer, and a custom Asset Chain. The contract interfaces with a core bridging contract (IBridgeAssist) that executes the actual cross-chain transfer.
+
+**Relayer System:** <br>
+- MoonPie Relayer: A designated relayer address, set by the contract owner, is responsible for completing bridge transactions on the destination chain by calling completeBridge. This ensures secure finalization of transfers.<br>
+- Core Bridge Relayer: The core bridging contract relies on its own relayers to validate and sign transactions, providing cryptographic signatures that MoonPieV2 verifies during transaction fulfillment.
+
+**Token Support:** 
+- Handles both ERC20 tokens and native tokens (e.g., ETH on Ethereum).
+- Allows the owner to register tokens with custom fee caps to enforce minimum transaction amounts and control fee structures.
+
+## How It Works  
+**Bridge Initiation (Source Chain):** 
+- Users call the bridge function, specifying the token, amount, recipient address, and core bridge contract (tokenBridge).
+
+- MoonPieV2 calculates and deducts the applicable fee, transferring it to the treasury address.
+
+- The remaining amount is sent to the core bridging contract (IBridgeAssist) for cross-chain transfer, either as native tokens (with msg.value) or ERC20 tokens (after approval).
+
+- A unique requestId is generated, and the transaction details are stored in bridgeTransactions for tracking.
+
+- The BridgeInitiated event is emitted.
+
+**Bridge Completion (Destination Chain):** 
+- The MoonPie relayer calls completeBridge, providing the source chain transaction ID, transaction details (FulfillTx), and signatures from the core bridge relayers.
+
+- MoonPieV2 verifies the signatures and destination chain details, then instructs the core bridge contract (destinationTokenBridge) to fulfill the transfer to the recipient.
+
+- The transaction is recorded, and the BridgeCompleted event is emitted.
 
 ## Foundry
 
 https://book.getfoundry.sh/
 
-## Usage
-
-```shell
-> forge build
-> forge test
-> forge fmt
-> forge snapshot
-> anvil
-> forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-> forge test --mc ChainFork --fork-url https://arbitrum-sepolia.gateway.tenderly.co
-> anvil --fork-url https://arbitrum-sepolia.gateway.tenderly.co
-> forge test --match-path test/ContractB.t.sol
-> forge test -vvv --fork-url https://mainnet.base.org
-```
 ## Tests
 ```shell
 forge test --match-path test/unit/v2/MoonPieV2Source.t.sol -vv --fork-url https://mainnet-rpc.assetchain.org
