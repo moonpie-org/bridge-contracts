@@ -10,8 +10,6 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import {IBridgeAssist} from "../interfaces/IBridgeAssist.sol";
 import "forge-std/console.sol";
 
-
-
 /// @title MoonPieV2
 /// @author Ebube Okorie - @kelviniot
 /// @dev MoonPie v2 bridges tokens to token, no swapping to RWA.
@@ -44,7 +42,8 @@ contract MoonPieV2 is
         string toChain;
         uint256 index;
     }
-    uint256 public DEFAULT_FEE_PERCENTAGE = 100; // 100 bps = 1% = 0.01, 500 bps = 5% = 0.05
+    uint256 public DEFAULT_FEE_PERCENTAGE; // 100 bps = 1% = 0.01, 500 bps = 5% = 0.05
+    address public NATIVE_TOKEN;
 
     address public RELAYER_ADDRESS;
     address public TREASURY_ADDRESS;
@@ -77,6 +76,7 @@ contract MoonPieV2 is
     error InvalidRecipient();
     error InvalidAddress();
     error InvalidZeroAmount();
+    error InvalidInputAmount();
     error TransferFailed();
     error SourceChainNotSupported();
     error TransferFromFailed();
@@ -101,6 +101,7 @@ contract MoonPieV2 is
         TREASURY_ADDRESS = _treasuryAddress;
         CURRENT_CHAIN = _currentChain;
         DEFAULT_FEE_PERCENTAGE = 100; // 1%
+        NATIVE_TOKEN = 0x0000000000000000000000000000000000000001; // Add this line
     }
 
     modifier onlyRelayer() {
@@ -118,6 +119,7 @@ contract MoonPieV2 is
         uint256 amount,
         string memory recipient
     ) public payable nonReentrant {
+
         if (amount == 0) {
             revert InvalidZeroAmount();
         }
@@ -134,19 +136,29 @@ contract MoonPieV2 is
         uint256 currentUserIndex = IBridgeAssist(tokenBridge)
             .getUserTransactionsAmount(address(this));
 
-        // on other chains we're only bridging erc20 tokens
-        // we only deal with native tokens on assetchain
-        SafeERC20.safeTransferFrom(
-            IERC20(token),
-            msg.sender,
-            address(this),
-            amount
-        );
-
         uint256 fee = calculateMoonPieFee(token, amount);
         uint256 amountAfterFee = amount - fee;
 
-        SafeERC20.safeTransfer(IERC20(token), TREASURY_ADDRESS, fee);
+        // transfer fees
+        if (token == NATIVE_TOKEN) {
+            if (msg.value != amount) {
+                revert InvalidInputAmount();
+            }
+
+            (bool feeSuccess, ) = TREASURY_ADDRESS.call{value: fee}("");
+            if (!feeSuccess) {
+                revert FeeTransferFailed();
+            }
+        } else {
+            SafeERC20.safeTransferFrom(
+                IERC20(token),
+                msg.sender,
+                address(this),
+                amount
+            );
+
+            SafeERC20.safeTransfer(IERC20(token), TREASURY_ADDRESS, fee);
+        }
 
         bytes32 requestId = keccak256(
             abi.encodePacked(
@@ -157,7 +169,6 @@ contract MoonPieV2 is
                 block.timestamp
             )
         );
-
         bridgeTransactions[requestId] = BridgeTransaction(
             recipient,
             token,
@@ -169,12 +180,21 @@ contract MoonPieV2 is
             currentUserIndex
         );
 
-        IERC20(token).approve(tokenBridge, amountAfterFee);
-        IBridgeAssist(tokenBridge).send(
-            amountAfterFee,
-            recipient,
-            supportedNetwork[NETWORKS.ASSET_CHAIN].network
-        );
+        // transfer token to bridge
+        if (token == NATIVE_TOKEN) {
+            IBridgeAssist(tokenBridge).send{value: amountAfterFee}(
+                amountAfterFee,
+                recipient,
+                supportedNetwork[NETWORKS.ASSET_CHAIN].network
+            );
+        } else {
+            IERC20(token).approve(tokenBridge, amountAfterFee);
+            IBridgeAssist(tokenBridge).send(
+                amountAfterFee,
+                recipient,
+                supportedNetwork[NETWORKS.ASSET_CHAIN].network
+            );
+        }
 
         emit BridgeInitiated(requestId, recipient, amountAfterFee);
     }
@@ -297,15 +317,28 @@ contract MoonPieV2 is
     ) public view returns (NETWORKS) {
         if (stringsMatch(chainId, supportedNetwork[NETWORKS.BASE].network)) {
             return NETWORKS.BASE;
-        } else if (stringsMatch(chainId, supportedNetwork[NETWORKS.ARBITRUM].network)) {
+        } else if (
+            stringsMatch(chainId, supportedNetwork[NETWORKS.ARBITRUM].network)
+        ) {
             return NETWORKS.ARBITRUM;
-        } else if (stringsMatch(chainId, supportedNetwork[NETWORKS.ASSET_CHAIN].network)) {
+        } else if (
+            stringsMatch(
+                chainId,
+                supportedNetwork[NETWORKS.ASSET_CHAIN].network
+            )
+        ) {
             return NETWORKS.ASSET_CHAIN;
-        } else if (stringsMatch(chainId, supportedNetwork[NETWORKS.ETHEREUM].network)) {
+        } else if (
+            stringsMatch(chainId, supportedNetwork[NETWORKS.ETHEREUM].network)
+        ) {
             return NETWORKS.ETHEREUM;
-        } else if (stringsMatch(chainId, supportedNetwork[NETWORKS.BITLAYER].network)) {
+        } else if (
+            stringsMatch(chainId, supportedNetwork[NETWORKS.BITLAYER].network)
+        ) {
             return NETWORKS.BITLAYER;
-        } else if (stringsMatch(chainId, supportedNetwork[NETWORKS.BSC].network)) {
+        } else if (
+            stringsMatch(chainId, supportedNetwork[NETWORKS.BSC].network)
+        ) {
             return NETWORKS.BSC;
         } else {
             revert SourceChainNotSupported();
