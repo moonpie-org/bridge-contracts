@@ -100,4 +100,132 @@ contract MoonPieV2Source is MoonPieSourceBase {
         uint256 treasuryBalanceAfter = usdc.balanceOf(TREASURY_ADDRESS);
         assertEq(treasuryBalanceAfter, expectedFee);
     }
+
+
+    function test_nativeBridgeInitiatedWithSuccess() public {
+        // Fund the user with some ETH
+        vm.deal(userAddress, 10 ether);
+
+        // Record initial balances
+        uint256 treasuryBalanceBefore = address(TREASURY_ADDRESS).balance;
+        uint256 bridgeBalanceBefore = address(mockNativeBridgeAddress).balance;
+
+        vm.startPrank(userAddress);
+
+        // Calculate expected amounts
+        uint256 totalAmount = 1 ether;
+        uint256 expectedFee = (totalAmount * moonPie.DEFAULT_FEE_PERCENTAGE()) /
+            10000; // 1%
+        uint256 expectedAmountAfterFee = totalAmount - expectedFee;
+
+        // vm.expectEmit(false, false, false, true);
+        // emit MoonPieV2.BridgeInitiated(bytes32(0), "", expectedAmountAfterFee);
+
+        // Bridge native token with value equal to amount
+        moonPie.bridge{value: totalAmount}(
+            moonPie.NATIVE_TOKEN(),
+            mockNativeBridgeAddress,
+            totalAmount,
+            string.concat("0x", Strings.toHexString(uint160(address(1))))
+        );
+
+        vm.stopPrank();
+
+        // Verify treasury received the fee
+        uint256 treasuryBalanceAfter = address(TREASURY_ADDRESS).balance;
+        assertEq(
+            treasuryBalanceAfter - treasuryBalanceBefore,
+            expectedFee,
+            "Treasury did not receive correct fee"
+        );
+
+        // Verify bridge received the tokens after fee
+        uint256 bridgeBalanceAfter = address(mockNativeBridgeAddress).balance;
+        assertEq(
+            bridgeBalanceAfter - bridgeBalanceBefore,
+            expectedAmountAfterFee,
+            "Bridge did not receive correct amount"
+        );
+
+        // Verify user's balance was reduced correctly
+        uint256 userBalanceAfter = address(userAddress).balance;
+        assertEq(
+            userBalanceAfter,
+            9 ether,
+            "User balance wasn't reduced correctly"
+        );
+    }
+
+    function test_nativeBridgeFailsWithInsufficientValue() public {
+        // Fund the user with some ETH
+        vm.deal(userAddress, 10 ether);
+
+        vm.startPrank(userAddress);
+
+        // Try to bridge with value not matching amount
+        uint256 sendValue = 0.5 ether;
+        uint256 declaredAmount = 1 ether;
+
+        address NATIVE = moonPie.NATIVE_TOKEN();
+
+        // vm.expectRevert();
+        vm.expectRevert(MoonPieV2.InvalidInputAmount.selector);
+        // vm.expectRevert("InvalidInputAmount()");
+        moonPie.bridge{value: sendValue}(
+            NATIVE,
+            mockNativeBridgeAddress,
+            declaredAmount,
+            string.concat("0x", Strings.toHexString(uint160(address(1))))
+        );
+
+        vm.stopPrank();
+    }
+    
+
+    function test_nativeBridgeWithRegisteredTokenFeeCap() public {
+        address NATIVE = moonPie.NATIVE_TOKEN();
+        // Register native token with a fee cap
+        vm.startPrank(msg.sender);
+        moonPie.registerToken(NATIVE, 0.05 ether); // Cap at 0.05 ETH
+        vm.stopPrank();
+
+        // Fund the user with some ETH
+        vm.deal(userAddress, 10 ether);
+
+        // Record initial balances
+        uint256 treasuryBalanceBefore = address(TREASURY_ADDRESS).balance;
+        uint256 bridgeBalanceBefore = address(mockNativeBridgeAddress).balance;
+
+        vm.startPrank(userAddress);
+
+        // Bridge a large amount to test fee capping
+        uint256 totalAmount = 10 ether;
+        uint256 expectedFee = 0.05 ether; // Fee should be capped at 0.05 ETH
+        uint256 expectedAmountAfterFee = totalAmount - expectedFee;
+
+        moonPie.bridge{value: totalAmount}(
+            NATIVE,
+            mockNativeBridgeAddress,
+            totalAmount,
+            string.concat("0x", Strings.toHexString(uint160(address(1))))
+        );
+
+        vm.stopPrank();
+
+        // Verify treasury received the capped fee
+        uint256 treasuryBalanceAfter = address(TREASURY_ADDRESS).balance;
+        assertEq(
+            treasuryBalanceAfter - treasuryBalanceBefore,
+            expectedFee,
+            "Treasury did not receive correct capped fee"
+        );
+
+        // Verify bridge received the tokens after fee
+        uint256 bridgeBalanceAfter = address(mockNativeBridgeAddress).balance;
+        assertEq(
+            bridgeBalanceAfter - bridgeBalanceBefore,
+            expectedAmountAfterFee,
+            "Bridge did not receive correct amount after capped fee"
+        );
+    }
 }

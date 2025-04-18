@@ -8,6 +8,7 @@ import {IBridgeAssist} from "src/interfaces/IBridgeAssist.sol";
 import {BaseScript, stdJson, console2} from "script/base.s.sol";
 import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {BridgeAssistTransferUpgradeable} from "../mocks/BridgeAssistTransferUpgradeable.sol";
+import {BridgeAssistNativeUpgradeable} from "../mocks/BridgeAssistNativeUpgradeable.sol";
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -33,6 +34,7 @@ contract MoonPieSourceBase is Test, BaseScript {
     address userAddress = address(this);
     address mockTokenAddress;
     address mockBridgeAddress;
+    address payable mockNativeBridgeAddress;
     uint256 assetChainFork;
     address constant ASSETCHAIN_USDC =
         0x2B7C1342Cc64add10B2a79C8f9767d2667DE64B2;
@@ -48,6 +50,8 @@ contract MoonPieSourceBase is Test, BaseScript {
         TREASURY_ADDRESS = vm.envAddress("TREASURY_ADDRESS");
         ASSETCHAIN_RPC_URL = vm.envString("ASSETCHAIN_RPC_URL");
         ownerPrivateKey = vm.envUint("OWNER_PRV_KEY");
+
+        vm.makePersistent(address(TREASURY_ADDRESS));
 
         // Then create the fork
         assetChainFork = vm.createFork(ASSETCHAIN_RPC_URL);
@@ -77,6 +81,7 @@ contract MoonPieSourceBase is Test, BaseScript {
         // Finally deploy the mocks
         deployUsdcMock();
         deployBridgeAssistMock();
+        deployNativeBridgeMock();
     }
 
     function deployUsdcMock() internal {
@@ -131,6 +136,67 @@ contract MoonPieSourceBase is Test, BaseScript {
             exchangeRatesFromPow
         );
         vm.stopPrank();
+    }
+
+    function deployNativeBridgeMock() internal {
+        // Deploy a new bridge assist implementation for native token
+        BridgeAssistNativeUpgradeable nativeImplementation = new BridgeAssistNativeUpgradeable();
+
+        // Setup relayers array similar to the ERC20 bridge
+        address[] memory relayers = new address[](1);
+        relayers[0] = RELAYER_ADDRESS;
+
+        // Deploy proxy with native token address (0x1)
+        address nativeBridgeProxy = UnsafeUpgrades.deployTransparentProxy(
+            address(nativeImplementation),
+            address(this),
+            abi.encodeCall(
+                BridgeAssistNativeUpgradeable.initialize,
+                (
+                    0x0000000000000000000000000000000000000001,
+                    1000 ether,
+                    TREASURY_ADDRESS,
+                    0,
+                    0,
+                    address(this),
+                    relayers,
+                    1
+                )
+            )
+        );
+
+        mockNativeBridgeAddress = payable(nativeBridgeProxy);
+
+        // Configure the native bridge similar to the ERC20 bridge
+        vm.startPrank(address(this));
+
+        // Grant manager role
+        BridgeAssistNativeUpgradeable(mockNativeBridgeAddress).grantRole(
+            BridgeAssistNativeUpgradeable(mockNativeBridgeAddress)
+                .MANAGER_ROLE(),
+            address(this)
+        );
+
+        // Add the same chains as ERC20 bridge
+        string[] memory chains = new string[](3);
+        chains[0] = "evm.42420";
+        chains[1] = "evm.42161";
+        chains[2] = "evm.8453";
+
+        uint256[] memory exchangeRatesFromPow = new uint256[](3);
+        exchangeRatesFromPow[0] = 0;
+        exchangeRatesFromPow[1] = 0;
+        exchangeRatesFromPow[2] = 0;
+
+        BridgeAssistNativeUpgradeable(mockNativeBridgeAddress).addChains(
+            chains,
+            exchangeRatesFromPow
+        );
+
+        vm.stopPrank();
+
+        // Fund the native bridge with some ETH for testing
+        vm.deal(mockNativeBridgeAddress, 100 ether);
     }
 
     function addSupportedNetworks(MoonPieV2 _moonPie) public {
