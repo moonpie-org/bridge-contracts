@@ -73,12 +73,19 @@ forge script script/MoonPie.t.s.sol --force --broadcast --rpc-url https://bsc-te
 ```
 ## Verify
 ```shell
-forge verify-contract 0x9c92D85821aDadC8B079b7EA018761a1798B15c2 src/v2/MoonPieV2.sol:MoonPieV2 --rpc-url https://enugu-rpc.assetchain.org --verifier blockscout --verifier-url https://scan-testnet.assetchain.org/api --chain-id 42421
+forge verify-contract 0x9ed45ce94395d3a8c6e96ACDbF2d17fc8DBDd140 src/v2/MoonPieV2.sol:MoonPieV2 --rpc-url https://enugu-rpc.assetchain.org --verifier blockscout --verifier-url https://scan-testnet.assetchain.org/api --chain-id 42421
+```
+```shell
+forge verify-contract 0x55bd049f934b20805609fE484Aa500ef51B0ee8A TransparentUpgradeableProxy --rpc-url https://enugu-rpc.assetchain.org --verifier blockscout --verifier-url https://scan-testnet.assetchain.org/api --chain-id 42421
+```
+```shell
+forge verify-contract 0x231e9744b6FfD9Ecda91eA0Efc4d999003ffCAc0 src/v2/MoonPieV2.sol:MoonPieV2 --rpc-url https://testnet-rpc.bitlayer.org --verifier blockscout --verifier-url https://api-testnet.bitlayer.org/scan/api --chain-id 200810
 ```
 
 ## Deployments
-| Network | Implementation Contract | ProxyAdmin Contract | Proxy Contract | Treasury Address |
-| --- | --- | --- | --- | --- |
-| Asset Chain Testnet | 0x9c92D85821aDadC8B079b7EA018761a1798B15c2 | 0xfd9D0FCCa509210e4C5c0903a9c1DbD13250e01e | 0xBECe8b1D79204adEC55D74EfE8E4b15796437B8f | 0x377123Ed74fBE8ddb47E30aEbCf267c55EFa7b33 |
-| Arbitrum Sepolia | 0x260EfB8F40eAEfb6C062fB1a28B27987CB96003F | 0x7D4057d2A19f685C43323426b06CF0fa46b0792f | 0x0e68b1f2AE192F92d9e0C6FbDC4e2d17F3A7516C | 0x377123Ed74fBE8ddb47E30aEbCf267c55EFa7b33 |
-| Base Sepolia | 0x2262e53F537E7805EB70FBA91d55241fc571BBfA | 0x17878B5a24a7DDf3B2725894feaC1909b0d060c4 | 0x41daC6aD742DD5BA7681c70B03699227E8840989 | 0x377123Ed74fBE8ddb47E30aEbCf267c55EFa7b33 |
+| Network | Implementation Contract | ProxyAdmin Contract | Proxy Contract |
+| --- | --- | --- | --- |
+| Asset Chain Testnet | 0x9ed45ce94395d3a8c6e96ACDbF2d17fc8DBDd140 | 0x68982592dB2533d5F8e9Af7ef42Bb923858BeEDf | 0x55bd049f934b20805609fE484Aa500ef51B0ee8A |
+| Arbitrum Sepolia | 0x4f625f42BfA4796F0CA2A204dccd76364E2C433B | 0x93F5A066d2F256051Aad563D1DC6b11Ed26f0304 | 0x381AFE71090cf71B75a886EA8833dfc9683c57b6 |
+| Base Sepolia | 0x1b577D56F0EffCd7808e9e7579CAaB27D7ae951B | 0x338B432fD6E26f518F70450452bC81ab5911ddD9 | 0xC442e76df720456535dfE53BDc6100C48a4A9CBf |
+| Bitlayer Testnet | 0x231e9744b6FfD9Ecda91eA0Efc4d999003ffCAc0 | 0xd31bf7b1A41C63e0ecE8c50D7DA8E109352b888B | 0xDe0c2ECF19BeDDE01ea0e139224b1319460BC7d1 |
