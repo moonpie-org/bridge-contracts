@@ -11,7 +11,6 @@ import {IBridgeAssist} from "../interfaces/IBridgeAssist.sol";
 import "forge-std/console.sol";
 
 /// @title MoonPieV2
-/// @author Ebube Okorie - @kelviniot
 /// @dev MoonPie v2 bridges tokens to token, no swapping to RWA.
 contract MoonPieV2 is
     Initializable,
