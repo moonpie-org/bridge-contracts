@@ -7,30 +7,35 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 /* 
-// assetchain
-  MoonPieV2 Implementation deployed at: 0x5e033B7826C8C9d36bd80fFC926e65743c08c82c
-  ProxyAdmin deployed at: 0xBc6fCD79E68F8a879A913702378e7064cBc323c5
-  MoonPieV2 Proxy deployed at: 0x74CCa740af0EBB235057df8e441f0F2f9D21d8c3
+  // base
+  MoonPieV2 Implementation deployed at: 0x5F9bdfDe65D462Af41E7AB0FEA909B3292d75259
+  ProxyAdmin deployed at: 0x8582Fb323e32C5A4539063130eC56b0eD2FF3b85
+  MoonPieV2 Proxy deployed at: 0x9d5d330C18FDb3Af2BC99187Ab19645CA395ACD5
 
-//   arbitrum
-    MoonPieV2 Implementation deployed at: 0x2B7C1342Cc64add10B2a79C8f9767d2667DE64B2
-  ProxyAdmin deployed at: 0x582eDb9E96750C819791c0353f2233EcCC7d3313
-  MoonPieV2 Proxy deployed at: 0xeD8AEcbA1743cBb01FAFE454524e8ee238C09c3B
+  // assetchain
+    MoonPieV2 Implementation deployed at: 0x13cC0012863C34f7ba7ff4da6Ad79bdA65B70276
+  ProxyAdmin deployed at: 0x4567d57F18eF5fc30769a335Ebb1054E148e690a
+  MoonPieV2 Proxy deployed at: 0x3ef2Dfe905502b82b1f47bCF5D4B13C0Fc7CE10f
 
-//   base
-  MoonPieV2 Implementation deployed at: 0x10244648dB5d97B2F8607fe8E012E78b73ca8b3F
-  ProxyAdmin deployed at: 0x05F66cdE041477f3D7D1Da7C703B978f573BD9e5
-  MoonPieV2 Proxy deployed at: 0x46e4450fcC5fE1b8C93694562a1330D5456b94A2
+  // arbitrum
+    MoonPieV2 Implementation deployed at: 0x8091Ff2549836719B2275a55975D4AFc013Be6C6
+  ProxyAdmin deployed at: 0x3A425EEF8376a6B6BFA38eaA2B374Bf71163486F
+  MoonPieV2 Proxy deployed at: 0x3B030B479116D4AC55793968e677d07660C0C0d5
 
-//   bsc
-    MoonPieV2 Implementation deployed at: 0x17e0D1239eA25904C66CFD4D051Ed0592Ad42fCe
-  ProxyAdmin deployed at: 0x991603DA1C59cAB3C49c37C506820f5bF07AdC55
-  MoonPieV2 Proxy deployed at: 0x5d2451c57c167B1437635f77f00acc35c326BAf1
+  // bsc
+    MoonPieV2 Implementation deployed at: 0xEf680bDad22708741591558f83c9dCDf25f65203
+  ProxyAdmin deployed at: 0x0d7C16FE961833a999342Ba1206E36F99e6377A4
+  MoonPieV2 Proxy deployed at: 0x665Ae728eDa90cFAF13702f434E35B5b91e8C443
 
-//   ethereum
-    MoonPieV2 Implementation deployed at: 0x10244648dB5d97B2F8607fe8E012E78b73ca8b3F
-  ProxyAdmin deployed at: 0x05F66cdE041477f3D7D1Da7C703B978f573BD9e5
-  MoonPieV2 Proxy deployed at: 0x46e4450fcC5fE1b8C93694562a1330D5456b94A2
+  // bitlayer
+  MoonPieV2 Implementation deployed at: 0xEf680bDad22708741591558f83c9dCDf25f65203
+  ProxyAdmin deployed at: 0x0d7C16FE961833a999342Ba1206E36F99e6377A4
+  MoonPieV2 Proxy deployed at: 0x665Ae728eDa90cFAF13702f434E35B5b91e8C443
+
+  // ETHEREUM
+    MoonPieV2 Implementation deployed at: 0xEf680bDad22708741591558f83c9dCDf25f65203
+  ProxyAdmin deployed at: 0x0d7C16FE961833a999342Ba1206E36F99e6377A4
+  MoonPieV2 Proxy deployed at: 0x665Ae728eDa90cFAF13702f434E35B5b91e8C443
 
  */
 
@@ -105,10 +110,3 @@ contract MoonPieScript is Script {
         vm.stopBroadcast();
     }
 }
-
-/* 
-  //  bitlayer
-  MoonPieV2 Implementation deployed at: 0x904d6bea6f53bb3fD7a4E6799B414B0b0Df0D0aa
-  ProxyAdmin deployed at: 0xc62c54d2439cE43D767B7b44939744BA1606feB2
-  MoonPieV2 Proxy deployed at: 0xFb727149C76dCa52F58b1AD73667eCe1d012FbBb
-   */
